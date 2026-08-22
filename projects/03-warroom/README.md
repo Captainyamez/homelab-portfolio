@@ -1,4 +1,4 @@
-# Portfolio Project #3: Secure Self-Hosted Application Deployment
+# Project #3: Secure Self-Hosted Application Deployment
 
 ## Overview
 
