@@ -1,137 +1,189 @@
 # Project #3: Secure Self-Hosted Application Deployment
 
-## Overview
+> **Status:** ✅ Running  
+> **Application:** Third-party War Room web application  
+> **Focus:** Self-hosting, Tailscale, HTTPS, browser permissions, privacy
 
-This project documents the deployment and administration of a third-party War Room web application on my Proxmox home server.
+## Why I Chose This Project
 
-I did **not** develop the War Room application itself. The project focuses on infrastructure work: deploying the application in my homelab, making it reachable through a private remote-access network, troubleshooting browser access, and reviewing privacy/security behavior before using the service.
+For this project, I wanted to go beyond installing a network utility and host a real web application that I could actually use.
 
-> **Public portfolio note:** Network addresses, hostnames, and other environment-specific identifiers shown here are sanitized or generalized. Credentials, public IP addresses, tokens, private keys, and private remote-access domains are not published.
+The application was **War Room**, a third-party project related to one of my hobbies. I did **not** develop War Room itself. My part of the project was deploying it on my homelab, making it reachable remotely, improving how I accessed it, and thinking through the security and privacy implications before using it.
+
+This was still early in my homelab journey, so I was learning as I went—especially around HTTP vs HTTPS, reverse proxying, private remote access, and browser site permissions.
+
+> **Public portfolio note:** Private hostnames, Tailscale domains, credentials, tokens, public IP addresses, and other sensitive identifiers are omitted or generalized.
+
+---
 
 ## Environment
 
-- Hypervisor: Proxmox VE
-- Linux guest/container hosting the application
-- Third-party War Room web application
-- Tailscale private overlay network
-- Tailscale Serve for HTTPS access within the tailnet
-- Browser-based administration from remote devices
+| Item | Configuration |
+|---|---|
+| Hypervisor | Proxmox VE |
+| Guest | Linux environment hosting War Room |
+| Application | Third-party War Room web app |
+| Remote access | Tailscale |
+| HTTPS access | Tailscale Serve |
+| Client testing | Browser on remote devices |
 
-## Objectives
+---
 
-- Deploy a third-party web application inside the homelab.
-- Keep the application off the public internet.
-- Provide remote access through an authenticated private overlay network.
-- Improve browser security by using HTTPS instead of directly browsing to an untrusted HTTP endpoint.
-- Evaluate application permissions before enabling location-dependent features.
-- Document the difference between application development and infrastructure deployment.
+## What I Wanted to Accomplish
+
+- Host a third-party web application on my own server.
+- Reach it while away from home.
+- Avoid exposing the application directly to the public internet.
+- Replace the original insecure browser access path with HTTPS.
+- Understand what browser permissions the site was requesting.
+- Keep application deployment separate from claims of software development.
+
+---
 
 ## Deployment
 
-### 1. Application hosting
+### 1. Getting the application running
 
-The War Room application was installed on a Linux environment hosted by Proxmox and configured to listen locally on a web port.
+War Room was installed on a Linux environment inside the Proxmox homelab and configured to listen on a local web port.
 
-The service was first reachable through a direct internal web address. The browser displayed a security warning because the initial connection method did not provide a trusted HTTPS context.
+At first, I accessed it using the basic web address provided by the service.
 
-### 2. Private remote access
+The application loaded, but the browser showed the warning/indicator associated with an insecure or untrusted connection.
 
-Rather than expose the application through router port forwarding, Tailscale was used to provide authenticated remote connectivity between approved devices.
+That immediately gave me another problem to solve instead of simply accepting that the page worked.
 
-This reduced the public attack surface and allowed access while away from the home network.
+### 2. Remote access with Tailscale
 
-### 3. HTTPS with Tailscale Serve
+Because Tailscale was already part of my homelab, I used it to reach the War Room host remotely.
 
-Tailscale Serve was configured to proxy the application's local HTTP listener behind a Tailscale-provided HTTPS endpoint.
+I preferred this over forwarding the application port through my home router because I did not want a hobby web application sitting openly on the public internet just so I could use it from my phone.
 
-Representative command:
+### 3. Using Tailscale Serve
+
+I then configured Tailscale Serve to proxy the application's local HTTP listener:
 
 ```bash
 tailscale serve --bg http://127.0.0.1:8000
 ```
 
-The resulting private HTTPS URL is intentionally omitted from this public portfolio.
+Tailscale returned a private HTTPS address that was only available within my tailnet.
 
-Moving from the direct HTTP address to the HTTPS Tailscale Serve endpoint removed the browser's insecure-connection warning and provided a cleaner access path for the application.
+I intentionally do not publish that hostname in this repository.
 
-## Security and Privacy Review
+When I opened War Room through the new address, the browser no longer showed the same insecure connection warning. That was a very visible way for me to see the difference between directly browsing to a raw HTTP service and placing it behind an HTTPS access layer.
 
-Before creating credentials or granting browser permissions, I reviewed how the application was being accessed and what data could potentially be exposed.
+---
 
-### Password handling
+## Security and Privacy Questions I Stopped to Ask
 
-Before creating an application password, I considered whether credentials would be stored by the third-party application and avoided publishing any authentication information in documentation.
+This project made me slow down and think about things that I probably would have clicked through in the past.
 
-### Browser geolocation
+### Where is my password going?
 
-While testing the application's map functionality, the browser requested permission to access device location.
+Before creating the War Room password, I stopped to consider whether the password would be stored locally by the application, sent elsewhere, or handled in some other way.
 
-Instead of granting permission automatically, I reviewed the browser's site-permission controls and verified that location access could be explicitly allowed or denied for the private War Room site.
+I did not want to assume that "self-hosted" automatically meant every part of an application was private or secure.
 
-This demonstrated an important distinction between:
+No application credentials are included in this portfolio.
 
-- Server-side application deployment
-- Browser permissions on the client device
-- Application access to data exposed by the browser
+### Why does the site want my location?
 
-The geolocation permission was controlled at the browser/site level rather than assumed to be inherently required by the server deployment.
+While looking at War Room's map functionality, the browser asked for location access.
 
-## Troubleshooting
+Initially, I could not click the permission options in the pop-up the way I expected.
 
-### Browser showed an insecure connection indicator
+I opened the browser's site controls and discovered that I could manage the permission directly from the site's settings.
 
-The original access method used a direct web endpoint and produced a browser warning.
+That helped me understand that there were several separate layers involved:
 
-Resolution:
+```text
+Server hosting the application
+          │
+          ▼
+Web application
+          │
+          ▼
+Browser
+          │
+          ▼
+Device location permission
+```
 
-- Kept the application listening locally.
-- Used Tailscale Serve as an HTTPS reverse proxy.
-- Connected through the private Tailscale HTTPS hostname instead of the raw HTTP endpoint.
+The fact that I host the server does not automatically mean the application gets unrestricted access to everything on the client device.
 
-### Site permissions were not obvious
+---
 
-When the application requested location access, the expected permission options were not immediately selectable from the prompt.
+## What Did Not Work Smoothly
 
-Resolution:
+### The first access method looked insecure
 
-- Opened the browser's site controls.
-- Located the permissions for the currently loaded private site.
-- Adjusted geolocation access from the site-specific permission interface.
+The application worked, but the browser security indicator made it clear that my first access method was not the way I wanted to leave it.
 
-This reinforced the value of understanding both server-side infrastructure and client-side browser security controls when troubleshooting web applications.
+Instead of exposing another port or ignoring the warning, I used the tools already available in my environment and put the local service behind Tailscale Serve.
+
+### Browser location permissions were confusing
+
+When the geolocation prompt first appeared, the expected controls were not responding normally.
+
+Rather than repeatedly clicking the prompt, I opened the browser's site settings and changed the permission from there.
+
+That was a good reminder that troubleshooting a self-hosted application sometimes means looking beyond the Linux server itself. The issue may be in the browser or client device.
+
+---
+
+## Current Access Design
+
+```text
+Remote Device
+     │
+     ▼
+Tailscale Private Network
+     │
+     ▼
+HTTPS / Tailscale Serve
+     │
+     ▼
+War Room Local HTTP Service
+     │
+     ▼
+Linux Guest on Proxmox
+```
+
+There is no intentional public port-forwarding path to the application.
+
+---
+
+## What I Learned
+
+This project helped me get hands-on experience with:
+
+- Deploying someone else's application on infrastructure I manage
+- Local web services
+- Private overlay networking
+- The practical difference between HTTP and HTTPS
+- Tailscale Serve as a simple HTTPS proxy
+- Browser site permissions
+- Client-side geolocation controls
+- Thinking about credential handling before entering credentials
+- Separating application development from application deployment and administration
+
+I am not presenting this project as proof that I am a web-security expert. What it shows is that I started asking better questions as I built the lab instead of treating "it loads in the browser" as the end of the project.
+
+---
 
 ## Result
 
-War Room is now self-hosted inside the Proxmox environment and can be reached remotely through a private Tailscale connection using HTTPS.
+War Room is now hosted inside my Proxmox environment and accessible remotely through my private Tailscale network using HTTPS.
 
-The application remains separated from direct public internet exposure, and sensitive hostnames and credentials are excluded from public documentation.
+More importantly, the project introduced me to the idea that self-hosting is not just installing software. It also involves deciding **how it should be reached, what should be exposed, what permissions it needs, and what data I am comfortable giving it.**
 
-## Skills Demonstrated
-
-- Third-party application deployment
-- Linux service administration
-- Proxmox-hosted service management
-- Private overlay networking
-- Tailscale remote access
-- HTTPS reverse proxying with Tailscale Serve
-- Web-service troubleshooting
-- Browser security and permission management
-- Privacy-conscious deployment practices
-- Infrastructure documentation
-
-## Key Takeaway
-
-This project demonstrates the operational side of self-hosting: taking software developed by someone else, deploying it on managed infrastructure, providing secure remote connectivity, troubleshooting user access, and evaluating privacy implications.
-
-That distinction is important in this portfolio: the work documented here represents **deployment, configuration, administration, and troubleshooting**, not authorship of the War Room application's source code.
+---
 
 ## Future Improvements
 
-Potential future work includes:
-
 - Persistent application-data backups
-- Centralized logging and monitoring
-- Resource-usage monitoring
-- Documented recovery procedures
-- More granular access control for additional users
-- Network segmentation as the homelab architecture grows
+- Centralized logging
+- Resource monitoring
+- Recovery documentation
+- More granular access for additional users
+- Network segmentation as the homelab grows
