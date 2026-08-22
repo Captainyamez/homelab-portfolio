@@ -41,7 +41,7 @@ This portfolio is intentionally project-based. Each milestone is documented as a
 
 ## Projects
 
-### [Project 1 — Proxmox Home Server Deployment](projects/01-proxmox-home-server/README.md)
+### [Project #1: Proxmox Home Server Deployment](projects/01-proxmox-home-server/README.md)
 
 Built the foundation of the home lab by installing Proxmox VE on repurposed enterprise hardware, configuring static host networking, enabling remote administration, and preparing the system for future virtualized services.
 
@@ -49,7 +49,7 @@ Built the foundation of the home lab by installing Proxmox VE on repurposed ente
 
 ---
 
-### [Project #2 — Pi-hole DNS & DHCP Deployment on Proxmox](projects/02-pihole/README.md)
+### [Project #2: Pi-hole DNS & DHCP Deployment on Proxmox](projects/02-pihole/README.md)
 
 Deployed Pi-hole inside an unprivileged Debian LXC container and integrated it with the home network for DNS filtering. Troubleshot routing, DNS resolution, container networking, router-side DNS behavior, and the relationship between DHCP-delivered network settings and DNS resolution.
 
@@ -57,7 +57,7 @@ Deployed Pi-hole inside an unprivileged Debian LXC container and integrated it w
 
 ---
 
-### [Portfolio Project #3: Secure Self-Hosted Application Deployment](projects/03-warroom/README.md)
+### [Project #3: Secure Self-Hosted Application Deployment](projects/03-warroom/README.md)
 
 Deployed and administered a third-party War Room web application inside the Proxmox environment, provided private remote access through Tailscale, and used Tailscale Serve to place the local application behind HTTPS.
 
