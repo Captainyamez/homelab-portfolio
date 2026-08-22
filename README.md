@@ -49,15 +49,15 @@ Built the foundation of the home lab by installing Proxmox VE on repurposed ente
 
 ---
 
-### [Project 2 — Pi-hole DNS Filtering](projects/02-pihole/README.md)
+### [Project #2 — Pi-hole DNS & DHCP Deployment on Proxmox](projects/02-pihole/README.md)
 
-Deployed Pi-hole inside an unprivileged Debian LXC container and integrated it with the home network for DNS filtering. Troubleshot routing, DNS resolution, container networking, and router-side DNS behavior.
+Deployed Pi-hole inside an unprivileged Debian LXC container and integrated it with the home network for DNS filtering. Troubleshot routing, DNS resolution, container networking, router-side DNS behavior, and the relationship between DHCP-delivered network settings and DNS resolution.
 
-**Skills:** DNS, LXC, Debian administration, routing, `ping`, `dig`, live-log analysis, network troubleshooting.
+**Skills:** DNS, DHCP/DNS interaction, LXC, Debian administration, routing, `ping`, `dig`, live-log analysis, network troubleshooting.
 
 ---
 
-### [Project 3 — Self-Hosted War Room Deployment](projects/03-warroom/README.md)
+### [Portfolio Project #3: Secure Self-Hosted Application Deployment](projects/03-warroom/README.md)
 
 Deployed and administered a third-party War Room web application inside the Proxmox environment, provided private remote access through Tailscale, and used Tailscale Serve to place the local application behind HTTPS.
 
