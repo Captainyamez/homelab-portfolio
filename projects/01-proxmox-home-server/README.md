@@ -1,4 +1,4 @@
-# Project 1 — Proxmox Home Server Deployment
+# Project #1: Proxmox Home Server Deployment
 
 ## Overview
 
