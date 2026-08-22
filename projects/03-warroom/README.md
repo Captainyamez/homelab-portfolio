@@ -1,4 +1,4 @@
-# Project 3 — Self-Hosted War Room Deployment
+# Portfolio Project #3: Secure Self-Hosted Application Deployment
 
 ## Overview
 
@@ -12,7 +12,7 @@ I did **not** develop the War Room application itself. The project focuses on in
 
 - Hypervisor: Proxmox VE
 - Linux guest/container hosting the application
-- War Room third-party web application
+- Third-party War Room web application
 - Tailscale private overlay network
 - Tailscale Serve for HTTPS access within the tailnet
 - Browser-based administration from remote devices
