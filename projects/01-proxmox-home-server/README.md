@@ -1,44 +1,59 @@
 # Project #1: Proxmox Home Server Deployment
 
-## Overview
+> **Status:** ✅ Running  
+> **Role:** First homelab / first Proxmox deployment  
+> **Focus:** Virtualization, Linux networking, storage, troubleshooting
 
-This project documents the initial deployment of my home lab using an HP EliteDesk 800 G4 SFF as a virtualization server. The goal was to turn inexpensive used enterprise hardware into a flexible platform for learning Linux, virtualization, networking, self-hosting, storage, and infrastructure administration.
+## Why I Built This
 
-> **Public portfolio note:** Network addresses and other environment-specific identifiers in this repository may be sanitized or replaced with documentation examples. No passwords, tokens, public IP addresses, private keys, or remote-access identifiers are intentionally published.
+This was the starting point of my homelab journey.
+
+I wanted a small home server that I could actually learn on instead of only watching videos or reading about servers and networking. I picked up a used **HP EliteDesk 800 G4 SFF** and decided to turn it into a Proxmox host that I could keep expanding over time.
+
+At this point I was not coming into the project as a Proxmox expert. A lot of the value of this project was figuring out what the different pieces were doing, breaking things down when something did not work, and learning how the hardware, network, and hypervisor fit together.
+
+> **Public portfolio note:** IP addresses and other environment-specific identifiers in this repository are sanitized or replaced with documentation examples. Passwords, tokens, public IP addresses, private keys, and private remote-access identifiers are not published.
+
+---
 
 ## Hardware
 
-- HP EliteDesk 800 G4 SFF
-- Intel Core i5-8500
-- 32 GB RAM
-- 1 TB NVMe SSD
-- 4 TB SATA HDD for bulk storage
-- Gigabit Ethernet
+| Component | Hardware |
+|---|---|
+| System | HP EliteDesk 800 G4 SFF |
+| CPU | Intel Core i5-8500 |
+| Memory | 32 GB RAM |
+| Primary storage | 1 TB NVMe SSD |
+| Bulk storage | 4 TB SATA HDD |
+| Network | Gigabit Ethernet |
 
-## Platform
+The EliteDesk appealed to me because it was inexpensive used enterprise hardware with enough RAM, storage expansion, and CPU capability to run several services without needing a large or power-hungry server.
 
-- Proxmox VE
-- Linux containers (LXC) and future virtual machines
-- Tailscale for authenticated remote administration
+---
 
-## Objectives
+## What I Wanted to Accomplish
 
-- Install a dedicated virtualization platform on the EliteDesk.
-- Configure a stable management interface on the home LAN.
-- Learn the Proxmox web interface and command-line tools.
-- Build a foundation for multiple isolated self-hosted services.
-- Establish secure remote administration without directly exposing Proxmox to the public internet.
-- Expand storage for future media, photo, and backup workloads.
+- Install Proxmox VE on bare metal.
+- Give the server a predictable management address on my home network.
+- Learn how Proxmox bridges physical networking to containers and VMs.
+- Access the server remotely without exposing the management page directly to the internet.
+- Create a foundation for future projects such as Pi-hole, Jellyfin, Immich, backups, and networking labs.
 
-## Deployment
+---
 
-### 1. Installation media
+## Build Log
 
-A Proxmox installation image was downloaded on a Windows laptop and written to a USB flash drive. The EliteDesk was then booted from USB and Proxmox was installed to the NVMe SSD.
+### 1. Creating the installer
 
-### 2. Host networking
+I downloaded the Proxmox installation image on my Windows laptop and wrote it to a USB flash drive.
 
-The Proxmox host was configured with a static management address on the local network using the default Linux bridge, `vmbr0`.
+The EliteDesk was then booted from the USB drive and Proxmox was installed to the NVMe SSD.
+
+This was my first time turning a normal small-form-factor PC into a dedicated hypervisor rather than installing a typical desktop operating system.
+
+### 2. Initial network configuration
+
+The Proxmox host was configured with a static management address and the default Linux bridge, `vmbr0`.
 
 Sanitized example:
 
@@ -49,57 +64,111 @@ Gateway:   192.168.10.1
 Bridge:    Physical Ethernet NIC
 ```
 
-Using a static address keeps the hypervisor reachable at a predictable management address and provides a stable bridge for containers and virtual machines.
+One of the things I had to understand here was that `vmbr0` is not just another physical Ethernet port. It acts as a Linux bridge so the Proxmox host and future guests can connect through the physical NIC.
 
-### 3. Web management
+### 3. Reaching the Proxmox dashboard
 
-The Proxmox web interface was accessed over HTTPS on port `8006` from another device on the LAN.
+The web interface is served over HTTPS on port `8006`:
 
 ```text
 https://192.168.10.10:8006
 ```
 
-### 4. Remote administration
+This sounds simple after the fact, but during setup the server initially appeared unreachable and I had to work through the network configuration rather than assume Proxmox itself had failed.
 
-Tailscale was installed so the server could be administered while away from home without port-forwarding the Proxmox management interface through the home router.
+### 4. Updates and basic verification
 
-This gave me a practical introduction to overlay networking and authenticated remote access while keeping the management service off the open internet.
+After getting access to the host, I worked through repository/update configuration and rebooted the server to make sure the installation came back normally.
 
-### 5. Storage expansion
+I also began using the Proxmox shell and Linux commands to look at CPU, memory, disks, and resource usage instead of relying only on the web dashboard.
 
-The system was initially brought online with the 1 TB NVMe SSD. A 4 TB SATA HDD was later installed for bulk data such as media, photo storage, and backups.
+### 5. Remote access with Tailscale
 
-Separating fast system/application storage from higher-capacity bulk storage gives the lab room to grow while keeping the initial hardware cost low.
+I installed Tailscale so I could reach the server securely while away from home.
 
-## Troubleshooting and Lessons Learned
+I deliberately wanted to avoid opening the Proxmox management interface directly to the public internet. Tailscale gave me a practical introduction to private overlay networking while also making the lab more useful day-to-day.
 
-### Management interface initially unreachable
+### 6. Storage expansion
 
-After the initial installation, the Proxmox web interface was not immediately reachable. Troubleshooting focused on physical Ethernet connectivity, the configured address, the Linux bridge, gateway settings, and the required HTTPS management port.
+The server was initially brought online using the 1 TB NVMe SSD. A 4 TB SATA hard drive was planned as bulk storage for media, photos, and backups.
 
-The process reinforced several networking fundamentals:
+That gave me a simple separation between faster system/application storage and larger-capacity data storage.
 
-- A service can be running correctly while still being unreachable because of addressing or connectivity problems.
-- Static IP, subnet mask, and default gateway values must agree with the LAN design.
-- Proxmox management uses HTTPS on TCP port `8006`, not the normal HTTPS port `443`.
-- The physical NIC is normally attached to `vmbr0`, allowing guests to participate in the LAN through the bridge.
+---
 
-## Result
+## The Part That Did Not Work Immediately
 
-The EliteDesk is now functioning as the primary Proxmox host for the home lab. It provides a central platform on which individual services can be deployed in isolated containers or virtual machines and documented as separate portfolio projects.
+### Proxmox was installed, but the web interface was unreachable
 
-## Skills Demonstrated
+This was the first real troubleshooting moment of the project.
 
-- Bare-metal hypervisor installation
-- Linux networking and bridges
-- Static IPv4 configuration
-- Web-based and CLI server administration
-- Remote-access design
-- Basic storage planning
-- Hardware installation and validation
-- Troubleshooting network reachability
-- Infrastructure documentation
+Instead of reinstalling everything, I worked through the problem layer by layer:
+
+- Checked that Ethernet was physically connected.
+- Verified the host address and subnet.
+- Checked the default gateway.
+- Confirmed the bridge configuration.
+- Remembered that Proxmox uses TCP port `8006` for the management interface.
+
+Once the addressing and connection details were correct, the dashboard became reachable.
+
+### What that taught me
+
+The biggest lesson was that **"the server is unreachable" does not automatically mean "the server is broken."**
+
+It could be the physical link, the host IP, the subnet, the gateway, the bridge, the service port, or the client I am connecting from. That basic troubleshooting mindset has carried into the later projects.
+
+---
+
+## What I Learned
+
+This project gave me my first hands-on experience with:
+
+- Bare-metal virtualization
+- Proxmox VE administration
+- Static IPv4 addressing
+- Linux bridges
+- Basic Linux CLI administration
+- Remote administration
+- Storage planning
+- Separating a service problem from a network problem
+- Documenting infrastructure as I build it
+
+I would not describe myself as an expert in all of those areas from one project. The value was getting past the point where the terminology was purely theoretical and seeing how the pieces behave on a real system.
+
+---
+
+## Current Result
+
+The EliteDesk is now the foundation of the homelab and is running Proxmox successfully.
+
+```text
+Home Network
+     │
+     ▼
+HP EliteDesk 800 G4 SFF
+     │
+     ├── Proxmox VE
+     │     ├── LXC containers
+     │     └── Future VMs
+     │
+     ├── 1 TB NVMe
+     └── 4 TB bulk storage
+```
+
+The important result for me is not just that Proxmox boots. I now have a platform where every new service can become another hands-on project instead of starting from scratch each time.
+
+---
 
 ## Next Steps
 
-The Proxmox host is the foundation for later projects including Pi-hole, self-hosted applications, Jellyfin, Immich, monitoring, backups, and increasingly advanced networking labs.
+The next milestones built on this host include:
+
+- Pi-hole
+- Secure self-hosted applications
+- Jellyfin
+- Immich
+- Backups
+- Monitoring
+- VLANs and network segmentation
+- CCNA-focused networking labs
