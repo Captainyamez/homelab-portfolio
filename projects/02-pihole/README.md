@@ -1,177 +1,240 @@
 # Project #2: Pi-hole DNS & DHCP Deployment on Proxmox
 
-## Overview
+> **Status:** ✅ Running  
+> **Environment:** Debian 13 LXC on Proxmox  
+> **Focus:** DNS, DHCP/DNS interaction, container networking, troubleshooting
 
-This project documents the deployment of Pi-hole as a network-wide DNS filtering service inside a Debian LXC container on my Proxmox home server.
+## Why I Chose This Project
 
-The goal was to learn containerized service deployment, static addressing, DNS forwarding, router-side DNS configuration, DHCP/DNS interaction, and practical network troubleshooting while providing useful ad and tracker filtering for devices on the home network.
+After getting Proxmox running, I wanted the next project to be something that would actually affect my home network instead of just existing as a lab exercise.
 
-> **Public portfolio note:** Addresses and environment-specific identifiers shown here are sanitized documentation examples. Credentials, public IP addresses, private keys, and remote-access identifiers are not published.
+Pi-hole seemed like a good fit because it gave me a reason to learn more about DNS, static IP addressing, containers, router settings, and troubleshooting while also providing a useful service for the devices in my house.
+
+I did not start this project already understanding every part of DNS or DHCP. A large part of the project was learning what each layer was doing as problems came up.
+
+> **Public portfolio note:** IP addresses and other environment-specific details shown here are sanitized documentation examples. Credentials, public IP addresses, private keys, and remote-access identifiers are not published.
+
+---
 
 ## Environment
 
-- Hypervisor: Proxmox VE
-- Guest type: Unprivileged LXC container
-- OS: Debian 13
-- Application: Pi-hole
-- Container resources:
-  - 1 vCPU
-  - 512 MB RAM
-  - 512 MB swap
-  - 8 GB disk
-- Network: Linux bridge through `vmbr0`
+| Item | Configuration |
+|---|---|
+| Hypervisor | Proxmox VE |
+| Guest type | Unprivileged LXC |
+| OS | Debian 13 |
+| Application | Pi-hole |
+| CPU | 1 vCPU |
+| Memory | 512 MB RAM |
+| Swap | 512 MB |
+| Disk | 8 GB |
+| Network | `vmbr0` bridge |
 
-Sanitized example addressing:
+Sanitized addressing example:
 
 ```text
-Proxmox host:   192.168.10.10
-Pi-hole LXC:    192.168.10.54
-Gateway:        192.168.10.1
-Subnet:         192.168.10.0/24
+Proxmox host: 192.168.10.10
+Pi-hole LXC:  192.168.10.54
+Gateway:      192.168.10.1
+Subnet:       192.168.10.0/24
 ```
 
-## Objectives
+---
 
-- Deploy Pi-hole in an isolated Linux container.
-- Assign the service a predictable static IPv4 address.
-- Confirm external network reachability from the container.
-- Configure DNS forwarding and verify recursive query flow.
-- Point network clients toward Pi-hole through router DNS settings.
-- Understand the relationship between DHCP-provided network settings and DNS resolution.
-- Monitor DNS traffic and validate filtering activity.
-- Troubleshoot connectivity and name-resolution failures from the command line.
+## What I Wanted to Accomplish
+
+- Create a lightweight Linux container for Pi-hole.
+- Give it a predictable static IP address.
+- Verify that the container could reach the internet.
+- Install Pi-hole and confirm that its DNS service worked locally.
+- Point devices on my home network toward Pi-hole through router-side network settings.
+- Watch live DNS queries to confirm that devices were actually using it.
+- Learn how DHCP-delivered network settings and DNS resolution relate to each other.
+
+---
 
 ## Deployment
 
-### 1. Debian LXC template
+### 1. Creating the Debian LXC
 
-A Debian 13 LXC template was downloaded from the Proxmox appliance repository and used to create the Pi-hole container.
+I downloaded a Debian 13 LXC template through Proxmox and created a dedicated container for Pi-hole.
 
-The container was configured to start automatically with the Proxmox host and was assigned a static LAN address.
-
-### 2. Container configuration
+The container was configured to start automatically with the host and was given a static LAN address.
 
 Representative sanitized configuration:
 
 ```text
-Architecture:  amd64
-CPU cores:     1
-Memory:        512 MB
-Swap:          512 MB
-Disk:          8 GB
-Unprivileged:  yes
-On boot:       yes
-Network:       vmbr0
-IPv4:          192.168.10.54/24
-Gateway:       192.168.10.1
+Architecture: amd64
+CPU cores:    1
+Memory:       512 MB
+Swap:         512 MB
+Disk:         8 GB
+Unprivileged: yes
+On boot:      yes
+Network:      vmbr0
+IPv4:         192.168.10.54/24
+Gateway:      192.168.10.1
 ```
 
-### 3. Pi-hole installation
+### 2. Installing Pi-hole
 
-Pi-hole was installed inside the Debian container and configured to listen for DNS requests from the local network.
+Pi-hole was installed inside the Debian container and configured to answer DNS requests from the local network.
 
-Upstream DNS resolvers were configured so Pi-hole could forward requests not answered locally or blocked by its filtering rules.
+Upstream DNS resolvers were then configured so queries that were not blocked could continue to external resolvers.
 
-### 4. Verification
+### 3. Testing the network before blaming DNS
 
-Several layers were tested independently:
+One of the most useful troubleshooting habits I picked up during this project was testing raw IP connectivity separately from DNS.
+
+For example:
 
 ```bash
 ping 1.1.1.1
 ```
 
-This confirmed whether raw IP connectivity worked without depending on DNS.
+If that failed, I knew the problem was not simply "DNS is broken." The container itself did not have working external connectivity yet.
+
+### 4. Testing Pi-hole directly
+
+Once network connectivity was working, I tested Pi-hole's DNS service directly through loopback:
 
 ```bash
 dig @127.0.0.1 example.com
 ```
 
-This tested Pi-hole's local DNS service directly.
+That let me verify Pi-hole itself independently from the router and other clients.
+
+### 5. Watching live traffic
+
+After adjusting the network/router settings, I used:
 
 ```bash
 pihole tail
 ```
 
-This provided a live view of DNS requests reaching the server.
+Seeing queries start to scroll by was the moment I knew devices were actually reaching the service rather than the dashboard merely being installed and available.
 
-The Pi-hole web dashboard was also used to confirm query volume and filtering activity.
+I also watched the Pi-hole dashboard query counts increase while normal devices such as my phone and streaming TV were sitting on the network.
 
-## Troubleshooting
+---
 
-### Initial network reachability failure
+## What Went Wrong
 
-The container initially had trouble reaching external addresses. Troubleshooting included checking:
+This project was not a clean install-and-done deployment.
 
-- Container IPv4 address and prefix length
-- Default route
+### The container initially could not reach the internet
+
+At one point, the Pi-hole container could not successfully ping an external IP address.
+
+I had to work through:
+
+- The container's IP address and prefix
+- Default gateway
 - Proxmox bridge configuration
-- Neighbor/ARP resolution
-- Connectivity to the gateway
-- External IP reachability
+- Neighbor/ARP behavior
+- Whether the gateway was reachable
+- Whether external IP connectivity worked
 
-Testing with a direct IP address such as `1.1.1.1` helped separate general network problems from DNS-specific problems.
+Eventually, direct connectivity to `1.1.1.1` worked successfully.
 
-### DNS resolver confusion
+### DNS queries were going somewhere unexpected
 
-During troubleshooting, DNS queries were observed attempting to use another resolver associated with remote-access networking rather than the intended local Pi-hole resolver.
+During troubleshooting, I saw DNS behavior involving another resolver associated with my remote-access networking setup.
 
-Testing Pi-hole explicitly through loopback with `dig @127.0.0.1` helped confirm that the Pi-hole service itself was functioning.
+Rather than guessing, I tested Pi-hole directly against `127.0.0.1`. That helped separate **"Pi-hole is broken"** from **"the system is currently asking a different resolver."**
 
-### Router DNS changes temporarily affected connectivity
+### Router DNS changes temporarily disrupted Wi-Fi
 
-When the router DNS settings were changed, a mobile device briefly reported that Wi-Fi was connected without internet access before connectivity recovered.
+When I changed DNS settings on the router, my phone briefly showed **connected without internet**.
 
-This reinforced the importance of making DNS changes methodically and validating:
+That was uncomfortable because the change affected the whole home network, but the connection recovered and Pi-hole queries began flowing afterward.
 
-1. Gateway reachability
-2. Direct internet reachability by IP
-3. Local DNS service operation
-4. Client DNS assignment through network configuration
-5. Actual query arrival on the Pi-hole server
+That experience taught me to make network-wide changes carefully and to validate them in layers instead of changing several things at once.
 
-### Secondary DNS behavior
+### Secondary DNS can bypass Pi-hole
 
-A secondary DNS resolver can allow clients to bypass Pi-hole depending on the client implementation. For consistent network-wide filtering, clients should receive Pi-hole as their intended DNS resolver unless redundancy is deliberately designed with another filtering DNS server.
+I also learned that supplying a normal external resolver as a secondary DNS server does not necessarily mean clients will use Pi-hole first and the secondary only when Pi-hole fails.
 
-## Monitoring
+Some clients may choose between them. That can result in DNS traffic bypassing Pi-hole entirely.
 
-Pi-hole's live query log and dashboard were used to observe DNS requests generated by normal devices on the network, including phones and streaming devices.
+---
 
-Seeing query counts increase while clients were otherwise idle demonstrated how frequently modern devices perform background DNS lookups.
+## How I Learned to Test It
 
-## Result
+The basic troubleshooting order that made the most sense to me became:
 
-Pi-hole was successfully deployed inside a Proxmox LXC container and began receiving and processing DNS queries from devices on the home network.
+```text
+1. Can the container reach the gateway?
+2. Can it reach an external IP address?
+3. Does Pi-hole answer a direct DNS query locally?
+4. What DNS settings are clients receiving?
+5. Are queries actually reaching Pi-hole?
+```
 
-The project provided hands-on experience with the relationship between DHCP/router configuration, DNS resolvers, Linux networking, containers, and application-level troubleshooting.
+That was probably more valuable than simply getting the final dashboard working.
 
-## Skills Demonstrated
+---
 
-- Proxmox LXC deployment
-- Debian Linux administration
-- Static IPv4 configuration
-- DNS fundamentals
-- DHCP/DNS interaction
-- DNS forwarding and filtering
-- Router DNS configuration
-- Linux network troubleshooting
-- `ping`, `dig`, routing, and live-log analysis
-- Service validation from both CLI and web interfaces
-- Network monitoring and documentation
+## DNS & DHCP — What I Actually Learned
 
-## Security and Design Considerations
+The project title includes DNS & DHCP because the project forced me to understand the relationship between them.
 
-Pi-hole is intended to serve trusted clients on the local network. The DNS service and administrative interface are not intentionally exposed directly to the public internet.
+At this stage of the lab, my focus was on Pi-hole as the DNS service and on how the router/network distributes DNS information to clients. I am not trying to claim that one early project made me an expert in DHCP or that I redesigned an enterprise DHCP environment.
 
-Remote administration of the broader home lab uses authenticated private networking rather than public port forwarding.
+What I came away understanding much better is that DHCP can provide clients with information such as:
+
+- Their IP configuration
+- Default gateway
+- DNS server addresses
+
+That means a perfectly functioning Pi-hole server is not useful network-wide if clients are never told to use it.
+
+---
+
+## Current Result
+
+Pi-hole is running inside its own Proxmox LXC and is receiving DNS queries from devices on the home network.
+
+```text
+Internet
+   │
+   ▼
+Home Router
+   │
+   ├── Network clients
+   │        │
+   │        └──── DNS requests ────┐
+   │                               │
+   ▼                               ▼
+Proxmox Host                  Pi-hole LXC
+                                 │
+                                 └── Upstream DNS
+```
+
+The most satisfying part of the project was watching the live query log begin to populate after troubleshooting the network path.
+
+---
+
+## What I Learned
+
+- How to create and configure a Proxmox LXC.
+- How static IPv4 settings affect a service that other devices depend on.
+- The difference between internet connectivity and DNS resolution.
+- How `ping` and `dig` can answer different troubleshooting questions.
+- How DNS settings supplied to clients determine whether they actually use Pi-hole.
+- Why a secondary resolver can unintentionally bypass filtering.
+- How useful live logs are when verifying whether a service is actually receiving traffic.
+
+I still have plenty to learn about DNS and DHCP, but this project moved both subjects from abstract networking terms into something I had configured and troubleshot myself.
+
+---
 
 ## Future Improvements
 
-Possible future extensions include:
-
 - Local DNS records for homelab services
-- A second DNS server for redundancy
 - More deliberate DHCP/DNS architecture
+- A second filtering DNS server for redundancy
 - VLAN segmentation
 - DNS metrics and centralized monitoring
-- Configuration backups and disaster-recovery documentation
+- Configuration backups
+- Documented recovery procedures
