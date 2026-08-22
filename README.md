@@ -1,109 +1,189 @@
 # Homelab Portfolio
 
-This repository documents the ongoing build-out of my home lab and the practical infrastructure skills I am developing through hands-on projects.
+> **Learning by building. Breaking things carefully. Writing down what I learn.**
 
-The lab is built around a repurposed HP EliteDesk 800 G4 SFF running Proxmox VE. Rather than treating the server as a single-purpose machine, I am using it as a platform for learning virtualization, Linux administration, networking, self-hosting, storage, DNS, remote access, troubleshooting, and infrastructure documentation.
+This repository documents the beginning of my homelab journey using a repurposed **HP EliteDesk 800 G4 SFF** running **Proxmox VE**.
 
-This portfolio is intentionally project-based. Each milestone is documented as a separate project with the objective, architecture, implementation process, troubleshooting, lessons learned, and future improvements.
+I am not presenting this repository as if I already know everything about Linux, networking, virtualization, or self-hosting. The point of the lab is the opposite: I am using real hardware and real services to move those subjects from theory into hands-on experience.
 
-> **Security note:** Public documentation is sanitized. Example private addresses may be substituted for real environment values, and passwords, API keys, tokens, public IP addresses, private keys, private remote-access domains, and other sensitive identifiers are not intentionally published.
+Each project includes what I was trying to accomplish, what I configured, what confused me, what broke, how I tested it, and what I learned from getting it working.
 
-## Current Homelab Platform
-
-### Server
-
-- **System:** HP EliteDesk 800 G4 SFF
-- **CPU:** Intel Core i5-8500
-- **Memory:** 32 GB RAM
-- **Primary storage:** 1 TB NVMe SSD
-- **Bulk storage:** 4 TB SATA HDD
-- **Hypervisor:** Proxmox VE
-
-### Supporting Devices
-
-- Windows laptop
-- Fedora Workstation ThinkPad
-- ClockworkPi uConsole
-- Android mobile devices for remote administration and testing
-
-### Technologies in Use
-
-- Proxmox VE
-- Debian Linux
-- Linux Containers (LXC)
-- Pi-hole
-- Tailscale
-- Tailscale Serve
-- SSH
-- DNS
-- IPv4 networking
-- Linux bridges
-
-## Projects
-
-### [Project #1: Proxmox Home Server Deployment](projects/01-proxmox-home-server/README.md)
-
-Built the foundation of the home lab by installing Proxmox VE on repurposed enterprise hardware, configuring static host networking, enabling remote administration, and preparing the system for future virtualized services.
-
-**Skills:** virtualization, Linux networking, static IPv4 configuration, storage planning, remote access, troubleshooting.
+> 🔒 **Public portfolio note:** Documentation is sanitized. Example private IP addresses may be substituted for real values, and passwords, tokens, public IP addresses, private keys, private Tailscale hostnames/domains, and other sensitive identifiers are not intentionally published.
 
 ---
 
-### [Project #2: Pi-hole DNS & DHCP Deployment on Proxmox](projects/02-pihole/README.md)
+## 🧭 Where I Am Right Now
 
-Deployed Pi-hole inside an unprivileged Debian LXC container and integrated it with the home network for DNS filtering. Troubleshot routing, DNS resolution, container networking, router-side DNS behavior, and the relationship between DHCP-delivered network settings and DNS resolution.
+This is an **active beginner homelab**, not a finished environment.
 
-**Skills:** DNS, DHCP/DNS interaction, LXC, Debian administration, routing, `ping`, `dig`, live-log analysis, network troubleshooting.
+The current goal is to keep adding useful services while gradually building stronger fundamentals in:
+
+`Linux` · `Networking` · `Proxmox` · `DNS` · `Containers` · `Remote Access` · `Storage` · `Troubleshooting`
+
+### Current project progress
+
+| # | Project | Status | What it pushed me to learn |
+|---|---|---|---|
+| 1 | [Proxmox Home Server Deployment](projects/01-proxmox-home-server/README.md) | ✅ Running | Hypervisors, Linux bridges, static IPs, remote administration |
+| 2 | [Pi-hole DNS & DHCP Deployment on Proxmox](projects/02-pihole/README.md) | ✅ Running | DNS, DHCP/DNS interaction, LXC networking, `ping`, `dig`, live logs |
+| 3 | [Secure Self-Hosted Application Deployment](projects/03-warroom/README.md) | ✅ Running | Tailscale, HTTPS, browser permissions, privacy-conscious self-hosting |
+| 4 | Storage expansion / media services | 🔜 Next | Storage layout, Jellyfin, media management |
+| 5 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
 
-### [Project #3: Secure Self-Hosted Application Deployment](projects/03-warroom/README.md)
+## 🖥️ The Lab
 
-Deployed and administered a third-party War Room web application inside the Proxmox environment, provided private remote access through Tailscale, and used Tailscale Serve to place the local application behind HTTPS.
+### Main server
 
-This project documents infrastructure deployment and administration; it does **not** claim authorship of the War Room software itself.
+| Component | Current hardware |
+|---|---|
+| System | HP EliteDesk 800 G4 SFF |
+| CPU | Intel Core i5-8500 |
+| Memory | 32 GB RAM |
+| Primary storage | 1 TB NVMe SSD |
+| Bulk storage | 4 TB SATA HDD |
+| Hypervisor | Proxmox VE |
 
-**Skills:** application deployment, private overlay networking, HTTPS proxying, browser security permissions, service troubleshooting, privacy-conscious administration.
+### Other devices I use while learning
 
-## What I Am Building Toward
+- **Fedora ThinkPad** — Linux workstation and networking practice
+- **Windows laptop** — installer creation, administration, general workstation
+- **ClockworkPi uConsole** — portable Linux/radio/network experimentation
+- **Android phone** — remote administration and real-world client testing
 
-The current projects are the beginning of a larger home infrastructure environment. Planned and developing areas include:
+### Current high-level layout
 
+```text
+                       Internet
+                          │
+                          ▼
+                     Home Router
+                          │
+                 ┌────────┴────────┐
+                 │                 │
+           Normal Clients      HP EliteDesk
+                                   │
+                                   ▼
+                              Proxmox VE
+                         ┌─────────┼─────────┐
+                         │         │         │
+                      Pi-hole   War Room   Future
+                        LXC       App      Services
+                                   │
+                                   └── Tailscale / HTTPS
+```
+
+This diagram is intentionally simplified and uses no sensitive addressing information.
+
+---
+
+# 📚 Projects
+
+## Project #1: Proxmox Home Server Deployment
+
+**The starting point.** I took a used small-form-factor business PC and turned it into my first dedicated virtualization host.
+
+The install itself was only part of the project. The first real lesson came when Proxmox appeared unreachable and I had to work through Ethernet connectivity, static addressing, the gateway, `vmbr0`, and the management port rather than assume the installation had failed.
+
+**Things I touched:**
+
+`Proxmox VE` · `Linux bridges` · `Static IPv4` · `Tailscale` · `SSH` · `Storage planning`
+
+➡️ **[Read Project #1](projects/01-proxmox-home-server/README.md)**
+
+---
+
+## Project #2: Pi-hole DNS & DHCP Deployment on Proxmox
+
+I wanted my second project to actually do something useful for the home network, so I deployed Pi-hole inside its own Debian LXC.
+
+This project became much more about troubleshooting than I originally expected. At different points I had to separate raw internet connectivity from DNS resolution, inspect routes and neighbor behavior, test Pi-hole directly with `dig`, and watch live queries before I could be confident devices were really using it.
+
+**Things I touched:**
+
+`Debian 13` · `LXC` · `Pi-hole` · `DNS` · `DHCP/DNS interaction` · `ping` · `dig` · `Live logs`
+
+➡️ **[Read Project #2](projects/02-pihole/README.md)**
+
+---
+
+## Project #3: Secure Self-Hosted Application Deployment
+
+For the third project, I deployed a third-party War Room web application related to one of my hobbies.
+
+I did **not** develop the application. My work was on the infrastructure side: hosting it, accessing it remotely through Tailscale, moving from the original HTTP access path to HTTPS using Tailscale Serve, and stopping to investigate password handling and browser geolocation permissions instead of blindly clicking through them.
+
+**Things I touched:**
+
+`Self-hosting` · `Tailscale` · `Tailscale Serve` · `HTTPS` · `Browser permissions` · `Privacy review`
+
+➡️ **[Read Project #3](projects/03-warroom/README.md)**
+
+---
+
+## 🧠 What I Am Trying to Get Better At
+
+A big reason I started documenting this is so I can look back and see the difference between what I understood at the beginning and what I understand later.
+
+Right now I am deliberately working on:
+
+- Understanding *why* a command or configuration works instead of only copying it.
+- Troubleshooting one layer at a time.
+- Getting more comfortable in Linux terminals.
+- Learning IPv4 addressing and subnetting well enough that they become intuitive.
+- Understanding DNS, DHCP, routing, switching, VLANs, and firewalling through actual use.
+- Building toward CCNA-level networking knowledge.
+- Writing documentation that another person could follow without having been there when I built it.
+
+---
+
+## 🔧 What Is Coming Next
+
+The lab is still young, so there is a lot left to build.
+
+Planned or developing projects include:
+
+- 4 TB bulk-storage integration and storage organization
 - Jellyfin media server
-- Immich self-hosted photo management
-- Centralized backups
-- Expanded storage management
-- System and network monitoring
+- Immich photo backup
+- Backup and recovery strategy
+- Monitoring and resource dashboards
+- Local DNS improvements
 - VLANs and network segmentation
-- Firewall policy and access control
-- Additional DNS redundancy
-- Virtual networking labs
-- CCNA-focused networking practice
-- Infrastructure diagrams and architecture documentation
+- Firewall rules and access-control experiments
+- Additional virtual networking labs
+- CCNA-focused labs and packet analysis
+- More detailed architecture diagrams
 
-## Why I Built This Portfolio
-
-My goal is to demonstrate practical ability rather than only list technologies on a resume. The projects here show the complete process of learning and operating infrastructure: planning, deployment, mistakes, troubleshooting, validation, security decisions, and documentation.
-
-The environment will continue to evolve, and this repository will be updated as new services and networking projects reach meaningful milestones.
-
-## Skills Demonstrated Across the Lab
-
-- Linux system administration
-- Proxmox virtualization
-- Linux containers
-- IPv4 addressing and subnetting fundamentals
-- DNS administration
-- Linux network bridges
-- Remote-access networking
-- SSH administration
-- Service deployment
-- Web-service troubleshooting
-- Storage planning
-- Security-conscious infrastructure design
-- Technical troubleshooting
-- Technical documentation
+Some of those plans will probably change as I learn more. That is part of what I want this repository to capture.
 
 ---
 
-**Status:** Active homelab — continuously expanding as new projects are completed.
+## 🛠️ Technologies I Have Used So Far
+
+![Proxmox](https://img.shields.io/badge/Proxmox-VE-informational)
+![Debian](https://img.shields.io/badge/Debian-13-informational)
+![Linux](https://img.shields.io/badge/Linux-CLI-informational)
+![Pi-hole](https://img.shields.io/badge/Pi--hole-DNS-informational)
+![Tailscale](https://img.shields.io/badge/Tailscale-Remote%20Access-informational)
+![SSH](https://img.shields.io/badge/SSH-Administration-informational)
+
+Badges here mean **"I have used this in the lab"**, not **"I am an expert in this technology."**
+
+---
+
+## Why This Repository Exists
+
+I could wait until I know much more and build a polished portfolio afterward, but that would erase the most useful part of the story.
+
+I would rather document the journey from the beginning—including the mistakes and the moments where I had to stop and figure out what was actually happening.
+
+The goal is that, over time, this repository shows two things:
+
+1. The infrastructure becoming more capable.
+2. My understanding becoming more capable with it.
+
+---
+
+**Current status:** 🟢 Homelab online and actively evolving.
