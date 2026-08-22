@@ -1,4 +1,4 @@
-# Project #2 — Pi-hole DNS & DHCP Deployment on Proxmox
+# Project #2: Pi-hole DNS & DHCP Deployment on Proxmox
 
 ## Overview
 
