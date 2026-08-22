@@ -1,10 +1,10 @@
-# Project 2 — Pi-hole DNS Filtering in Proxmox LXC
+# Project #2 — Pi-hole DNS & DHCP Deployment on Proxmox
 
 ## Overview
 
 This project documents the deployment of Pi-hole as a network-wide DNS filtering service inside a Debian LXC container on my Proxmox home server.
 
-The goal was to learn containerized service deployment, static addressing, DNS forwarding, router-side DNS configuration, and practical network troubleshooting while providing useful ad and tracker filtering for devices on the home network.
+The goal was to learn containerized service deployment, static addressing, DNS forwarding, router-side DNS configuration, DHCP/DNS interaction, and practical network troubleshooting while providing useful ad and tracker filtering for devices on the home network.
 
 > **Public portfolio note:** Addresses and environment-specific identifiers shown here are sanitized documentation examples. Credentials, public IP addresses, private keys, and remote-access identifiers are not published.
 
@@ -37,6 +37,7 @@ Subnet:         192.168.10.0/24
 - Confirm external network reachability from the container.
 - Configure DNS forwarding and verify recursive query flow.
 - Point network clients toward Pi-hole through router DNS settings.
+- Understand the relationship between DHCP-provided network settings and DNS resolution.
 - Monitor DNS traffic and validate filtering activity.
 - Troubleshoot connectivity and name-resolution failures from the command line.
 
@@ -125,7 +126,7 @@ This reinforced the importance of making DNS changes methodically and validating
 1. Gateway reachability
 2. Direct internet reachability by IP
 3. Local DNS service operation
-4. Client DNS assignment
+4. Client DNS assignment through network configuration
 5. Actual query arrival on the Pi-hole server
 
 ### Secondary DNS behavior
@@ -150,6 +151,7 @@ The project provided hands-on experience with the relationship between DHCP/rout
 - Debian Linux administration
 - Static IPv4 configuration
 - DNS fundamentals
+- DHCP/DNS interaction
 - DNS forwarding and filtering
 - Router DNS configuration
 - Linux network troubleshooting
