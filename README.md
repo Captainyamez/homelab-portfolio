@@ -8,7 +8,7 @@ I am not presenting this repository as if I already know everything about Linux,
 
 Each project includes what I was trying to accomplish, what I configured, what confused me, what broke, how I tested it, and what I learned from getting it working.
 
-> 🔒 **Public portfolio note:** Documentation is sanitized. Example private IP addresses may be substituted for real values, and passwords, tokens, public IP addresses, private keys, private Tailscale hostnames/domains, and other sensitive identifiers are not intentionally published.
+> 🔒 **Public portfolio note:** Documentation is sanitized. Example private IP addresses may be substituted for real values, and passwords, tokens, public IP addresses, private keys, private Tailscale hostnames/domains, device IDs, and other sensitive identifiers are not intentionally published.
 
 ---
 
@@ -27,8 +27,9 @@ The current goal is to keep adding useful services while gradually building stro
 | 1 | [Proxmox Home Server Deployment](projects/01-proxmox-home-server/README.md) | ✅ Running | Hypervisors, Linux bridges, static IPs, remote administration |
 | 2 | [Pi-hole DNS & DHCP Deployment on Proxmox](projects/02-pihole/README.md) | ✅ Running | DNS, DHCP/DNS interaction, LXC networking, `ping`, `dig`, live logs |
 | 3 | [Secure Self-Hosted Application Deployment](projects/03-warroom/README.md) | ✅ Running | Tailscale, HTTPS, browser permissions, privacy-conscious self-hosting |
-| 4 | Storage expansion / media services | 🔜 Next | Storage layout, Jellyfin, media management |
-| 5 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
+| 4 | [Self-Hosted Obsidian Vault Synchronization](projects/04-obsidian-syncthing/README.md) | ✅ Running | Syncthing, Linux services, multi-device sync, versioning |
+| 5 | Storage expansion / media services | 🔜 Next | Storage layout, Jellyfin, media management |
+| 6 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
 
@@ -50,7 +51,7 @@ The current goal is to keep adding useful services while gradually building stro
 - **Fedora ThinkPad** — Linux workstation and networking practice
 - **Windows laptop** — installer creation, administration, general workstation
 - **ClockworkPi uConsole** — portable Linux/radio/network experimentation
-- **Android phone** — remote administration and real-world client testing
+- **Android phone** — remote administration, synchronized notes, and real-world client testing
 
 ### Current high-level layout
 
@@ -66,12 +67,12 @@ The current goal is to keep adding useful services while gradually building stro
                                    │
                                    ▼
                               Proxmox VE
-                         ┌─────────┼─────────┐
-                         │         │         │
-                      Pi-hole   War Room   Future
-                        LXC       App      Services
-                                   │
-                                   └── Tailscale / HTTPS
+                      ┌────────────┼────────────┐
+                      │            │            │
+                   Pi-hole      War Room     Syncthing
+                     LXC          App          Service
+                                                │
+                                     Fedora ↔ Server ↔ Android
 ```
 
 This diagram is intentionally simplified and uses no sensitive addressing information.
@@ -122,6 +123,20 @@ I did **not** develop the application. My work was on the infrastructure side: h
 
 ---
 
+## Project #4: Self-Hosted Obsidian Vault Synchronization
+
+As my CCNA and networking notes started becoming something I actually relied on, I wanted the same Obsidian vault available from both my Fedora ThinkPad and Android phone.
+
+For this project I used Syncthing with an always-on copy in the homelab rather than manually transferring notes between devices. I paired each device, located the actual Obsidian vault from Linux, configured folder sharing and versioning, and then tested changes in both directions before considering it finished.
+
+**Things I touched:**
+
+`Syncthing` · `Obsidian` · `systemd` · `Linux permissions` · `Device discovery` · `File versioning` · `Android/Linux sync`
+
+➡️ **[Read Project #4](projects/04-obsidian-syncthing/README.md)**
+
+---
+
 ## 🧠 What I Am Trying to Get Better At
 
 A big reason I started documenting this is so I can look back and see the difference between what I understood at the beginning and what I understand later.
@@ -167,6 +182,8 @@ Some of those plans will probably change as I learn more. That is part of what I
 ![Linux](https://img.shields.io/badge/Linux-CLI-informational)
 ![Pi-hole](https://img.shields.io/badge/Pi--hole-DNS-informational)
 ![Tailscale](https://img.shields.io/badge/Tailscale-Remote%20Access-informational)
+![Syncthing](https://img.shields.io/badge/Syncthing-File%20Sync-informational)
+![Obsidian](https://img.shields.io/badge/Obsidian-Notes-informational)
 ![SSH](https://img.shields.io/badge/SSH-Administration-informational)
 
 Badges here mean **"I have used this in the lab"**, not **"I am an expert in this technology."**
