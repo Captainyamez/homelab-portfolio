@@ -24,11 +24,11 @@ The current goal is to keep adding useful services while gradually building stro
 
 | # | Project | Status | What it pushed me to learn |
 |---|---|---|---|
-| 1 | [Proxmox Home Server Deployment](projects/01-proxmox-home-server/README.md) | ✅ Running | Hypervisors, Linux bridges, static IPs, remote administration |
+| 1 | [Proxmox Home Server Deployment](projects/01-proxmox-home-server/README.md) | ✅ Running / Expanded | Hypervisors, Linux bridges, static IPs, remote administration, filesystems, persistent storage |
 | 2 | [Pi-hole DNS & DHCP Deployment on Proxmox](projects/02-pihole/README.md) | ✅ Running | DNS, DHCP/DNS interaction, LXC networking, `ping`, `dig`, live logs |
 | 3 | [Secure Self-Hosted Application Deployment](projects/03-warroom/README.md) | ✅ Running | Tailscale, HTTPS, browser permissions, privacy-conscious self-hosting |
 | 4 | [Self-Hosted Obsidian Vault Synchronization](projects/04-obsidian-syncthing/README.md) | ✅ Running | Syncthing, Linux services, multi-device sync, versioning |
-| 5 | Storage expansion / media services | 🔜 Next | Storage layout, Jellyfin, media management |
+| 5 | Jellyfin media server | 🔜 Next | LXC storage bind mounts, media organization, streaming, hardware acceleration |
 | 6 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
@@ -87,9 +87,11 @@ This diagram is intentionally simplified and uses no sensitive addressing inform
 
 The install itself was only part of the project. The first real lesson came when Proxmox appeared unreachable and I had to work through Ethernet connectivity, static addressing, the gateway, `vmbr0`, and the management port rather than assume the installation had failed.
 
+The project later expanded with a 4 TB SATA HDD that I health-checked, repartitioned, formatted as `ext4`, and mounted persistently for future bulk application data.
+
 **Things I touched:**
 
-`Proxmox VE` · `Linux bridges` · `Static IPv4` · `Tailscale` · `SSH` · `Storage planning`
+`Proxmox VE` · `Linux bridges` · `Static IPv4` · `Tailscale` · `SSH` · `SMART` · `GPT` · `ext4` · `/etc/fstab` · `Storage planning`
 
 ➡️ **[Read Project #1](projects/01-proxmox-home-server/README.md)**
 
@@ -157,9 +159,10 @@ Right now I am deliberately working on:
 
 The lab is still young, so there is a lot left to build.
 
+The 4 TB bulk-storage integration is now complete at the host level, including filesystem creation, persistent mounting, and an initial directory structure. The next step is to begin using that storage from application containers.
+
 Planned or developing projects include:
 
-- 4 TB bulk-storage integration and storage organization
 - Jellyfin media server
 - Immich photo backup
 - Backup and recovery strategy
