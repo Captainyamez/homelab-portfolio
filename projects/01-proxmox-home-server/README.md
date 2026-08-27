@@ -155,6 +155,11 @@ This project gave me my first hands-on experience with:
 - Linux bridges
 - Basic Linux CLI administration
 - Remote administration
+- SMART disk-health validation
+- GPT partitioning
+- ext4 filesystem creation
+- Persistent Linux mounts with `/etc/fstab`
+- Separating fast application storage from bulk data storage
 - Storage planning
 - Separating a service problem from a network problem
 - Documenting infrastructure as I build it
@@ -178,7 +183,10 @@ HP EliteDesk 800 G4 SFF
      │     └── Future VMs
      │
      ├── 1 TB NVMe
+     │     └── Proxmox + container root disks
+     │
      └── 4 TB bulk storage
+           └── Application data / media / photos / backups
 ```
 
 The important result for me is not just that Proxmox boots. I now have a platform where every new service can become another hands-on project instead of starting from scratch each time.
