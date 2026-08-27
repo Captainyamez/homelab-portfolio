@@ -88,11 +88,36 @@ I installed Tailscale so I could reach the server securely while away from home.
 
 I deliberately wanted to avoid opening the Proxmox management interface directly to the public internet. Tailscale gave me a practical introduction to private overlay networking while also making the lab more useful day-to-day.
 
-### 6. Storage expansion
+### 6. Storage expansion: 4 TB HDD installation and persistent mount
 
-The server was initially brought online using the 1 TB NVMe SSD. A 4 TB SATA hard drive was planned as bulk storage for media, photos, and backups.
+The server was initially brought online using the 1 TB NVMe SSD. I later installed a 4 TB Toshiba SATA hard drive for bulk media, photo, shared-file, and backup storage.
 
-That gave me a simple separation between faster system/application storage and larger-capacity data storage.
+Before putting data on the drive, I verified that Proxmox detected the **Toshiba DT02ABA400V** as `/dev/sda` and checked its health with SMART diagnostics. The overall result was `PASSED`, with only **9 power-on hours** and zero reallocated, pending, or uncorrectable sectors. This gave me a clean baseline instead of assuming that a newly installed drive was healthy.
+
+The drive still contained an old NTFS/GPT layout, so I removed the previous layout and created a new GPT partition using the full disk. I then:
+
+- Formatted the new partition as `ext4`.
+- Applied the filesystem label `homelab-storage`.
+- Mounted it at `/mnt/homelab-storage`.
+- Added a UUID-based entry to `/etc/fstab` so the mount persists across reboots.
+- Tested the configuration with `mount -a`.
+- Confirmed the source, filesystem, label, and mount point with `findmnt` and `lsblk`.
+
+The exact UUID is intentionally omitted because it is not useful to someone reproducing the project and is specific to this drive.
+
+I created an initial directory structure before deploying applications:
+
+```text
+/mnt/homelab-storage/
+├── backups/
+├── immich/
+├── jellyfin/
+└── shared/
+```
+
+This completed the host-level storage milestone. The NVMe remains the fast storage for Proxmox and container root disks, while the HDD is reserved for bulk application data. Future Jellyfin and Immich containers can receive only the directories they need through bind mounts, which keeps the services separated without moving their root disks off the NVMe.
+
+This step gave me hands-on practice with drive-health validation, partitioning, Linux filesystems, persistent mounts, storage roles, and planning how host storage will be exposed safely to containers.
 
 ---
 
