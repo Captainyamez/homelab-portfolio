@@ -29,7 +29,7 @@ The current goal is to keep adding useful services while gradually building stro
 | 3 | [Secure Self-Hosted Application Deployment](projects/03-warroom/README.md) | ✅ Running | Tailscale, HTTPS, browser permissions, privacy-conscious self-hosting |
 | 4 | [Self-Hosted Obsidian Vault Synchronization](projects/04-obsidian-syncthing/README.md) | ✅ Running | Syncthing, Linux services, multi-device sync, versioning |
 | 5 | [Jellyfin Media Server Deployment on Proxmox](projects/05-jellyfin/README.md) | ✅ Running / Remotely Tested | LXC storage bind mounts, Linux permissions, Intel Quick Sync/VA-API, private remote streaming |
-| 6 | Containerized DVD ripping / media ingestion | 🚧 In Progress | Optical-device passthrough, media extraction, FFmpeg workflow, file organization |
+| 6 | [DVD Ripping and Hardware-Accelerated Media Encoding on Proxmox](projects/06-dvd-ripping/README.md) | ✅ Working / Manually Tested | Optical-device passthrough, DVD structure, FFmpeg, VA-API HEVC, stream selection, media troubleshooting |
 | 7 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
@@ -68,14 +68,14 @@ The current goal is to keep adding useful services while gradually building stro
                                    │
                                    ▼
                               Proxmox VE
-                  ┌────────┬───────┼────────┬────────┐
-                  │        │       │        │        │
-               Pi-hole  War Room Syncthing Jellyfin Media
-                 LXC      App     Service    LXC    Storage
-                                     │        │       │
-                          Fedora ↔ Server ↔ Android   │
-                                              │       │
-                                              └── 4 TB HDD
+               ┌────────┬──────────┼────────┬──────────┐
+               │        │          │        │          │
+            Pi-hole  War Room  Syncthing Jellyfin  DVD Ripper
+              LXC      App       Service    LXC        LXC
+                                  │          │           │
+                      Fedora ↔ Server ↔ Android          │
+                                             │           │
+                                             └──── 4 TB HDD
 ```
 
 This diagram is intentionally simplified and uses no sensitive addressing information.
@@ -156,6 +156,22 @@ This project pulled several parts of the homelab together. I had to work through
 
 ---
 
+## Project #6: DVD Ripping and Hardware-Accelerated Media Encoding on Proxmox
+
+After Jellyfin was working, I wanted a separate ingestion workflow for moving media from personally owned DVDs into the library without turning the Jellyfin container into a ripping workstation.
+
+I built another Debian LXC, passed the physical optical drive and Intel render device into it, bind-mounted working and media directories from the 4 TB HDD, and tested a manual workflow based around `dvdbackup`, FFmpeg's `dvdvideo` demuxer, `ffprobe`, Intel VA-API HEVC encoding, and software fallback when a disc did not behave cleanly.
+
+This became one of the more troubleshooting-heavy projects in the lab. Different discs exposed differences in DVD navigation, aspect ratio, audio/subtitle layouts, progressive versus interlaced material, timestamp behavior, and even a mid-stream video-parameter change that required splitting an encode into sections and joining the verified results afterward.
+
+**Things I touched:**
+
+`DVD-Video` · `LXC device passthrough` · `/dev/sr0` · `/dev/sg0` · `FFmpeg` · `ffprobe` · `dvdbackup` · `VA-API` · `HEVC` · `libx265` · `Audio/subtitle mapping` · `Media verification`
+
+➡️ **[Read Project #6](projects/06-dvd-ripping/README.md)**
+
+---
+
 ## 🧠 What I Am Trying to Get Better At
 
 A big reason I started documenting this is so I can look back and see the difference between what I understood at the beginning and what I understand later.
@@ -176,12 +192,12 @@ Right now I am deliberately working on:
 
 The lab is still young, so there is a lot left to build.
 
-The 4 TB bulk-storage integration is complete at the host level and is now actively being used by Jellyfin through an LXC bind mount. The next media-related work is a separate containerized DVD-ripping and ingestion workflow rather than folding that process into the Jellyfin project itself.
+The 4 TB bulk-storage integration is complete at the host level and is now actively used by both Jellyfin and the separate DVD-ripping/media-ingestion container. The ripping process is working as a manual, verified workflow; future automation will be added only after I am comfortable with the edge cases I found during testing.
 
 Planned or developing projects include:
 
-- Containerized DVD ripping / media ingestion
 - Immich photo backup
+- DVD-ingestion automation and validation
 - Backup and recovery strategy
 - Monitoring and resource dashboards
 - Local DNS improvements
@@ -205,6 +221,7 @@ Some of those plans will probably change as I learn more. That is part of what I
 ![Syncthing](https://img.shields.io/badge/Syncthing-File%20Sync-informational)
 ![Obsidian](https://img.shields.io/badge/Obsidian-Notes-informational)
 ![Jellyfin](https://img.shields.io/badge/Jellyfin-Media%20Server-informational)
+![FFmpeg](https://img.shields.io/badge/FFmpeg-Media%20Processing-informational)
 ![Intel Quick Sync](https://img.shields.io/badge/Intel-Quick%20Sync-informational)
 ![SSH](https://img.shields.io/badge/SSH-Administration-informational)
 
