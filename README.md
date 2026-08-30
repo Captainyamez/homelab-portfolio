@@ -28,8 +28,9 @@ The current goal is to keep adding useful services while gradually building stro
 | 2 | [Pi-hole DNS & DHCP Deployment on Proxmox](projects/02-pihole/README.md) | ✅ Running | DNS, DHCP/DNS interaction, LXC networking, `ping`, `dig`, live logs |
 | 3 | [Secure Self-Hosted Application Deployment](projects/03-warroom/README.md) | ✅ Running | Tailscale, HTTPS, browser permissions, privacy-conscious self-hosting |
 | 4 | [Self-Hosted Obsidian Vault Synchronization](projects/04-obsidian-syncthing/README.md) | ✅ Running | Syncthing, Linux services, multi-device sync, versioning |
-| 5 | Jellyfin media server | 🔜 Next | LXC storage bind mounts, media organization, streaming, hardware acceleration |
-| 6 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
+| 5 | [Jellyfin Media Server Deployment on Proxmox](projects/05-jellyfin/README.md) | ✅ Running / Remotely Tested | LXC storage bind mounts, Linux permissions, Intel Quick Sync/VA-API, private remote streaming |
+| 6 | Containerized DVD ripping / media ingestion | 🚧 In Progress | Optical-device passthrough, media extraction, FFmpeg workflow, file organization |
+| 7 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
 
@@ -67,12 +68,14 @@ The current goal is to keep adding useful services while gradually building stro
                                    │
                                    ▼
                               Proxmox VE
-                      ┌────────────┼────────────┐
-                      │            │            │
-                   Pi-hole      War Room     Syncthing
-                     LXC          App          Service
-                                                │
-                                     Fedora ↔ Server ↔ Android
+                  ┌────────┬───────┼────────┬────────┐
+                  │        │       │        │        │
+               Pi-hole  War Room Syncthing Jellyfin Media
+                 LXC      App     Service    LXC    Storage
+                                     │        │       │
+                          Fedora ↔ Server ↔ Android   │
+                                              │       │
+                                              └── 4 TB HDD
 ```
 
 This diagram is intentionally simplified and uses no sensitive addressing information.
@@ -139,6 +142,20 @@ For this project I used Syncthing with an always-on copy in the homelab rather t
 
 ---
 
+## Project #5: Jellyfin Media Server Deployment on Proxmox
+
+After adding the 4 TB HDD, I wanted to turn that storage into a useful service rather than leave it as unused capacity. I deployed Jellyfin in its own Debian 13 LXC and bind-mounted the media directory from the bulk-storage drive into the container.
+
+This project pulled several parts of the homelab together. I had to work through LXC storage mapping and permissions, fix an initial Debian repository mismatch during installation, pass the Intel UHD 630 render device into the unprivileged container, verify the Intel `iHD` VA-API driver from inside the LXC, and test access from the Android Jellyfin app over Tailscale while away from home.
+
+**Things I touched:**
+
+`Jellyfin` · `Debian 13` · `LXC bind mounts` · `Linux permissions` · `Intel Quick Sync` · `VA-API` · `i915` · `Tailscale` · `Remote client testing`
+
+➡️ **[Read Project #5](projects/05-jellyfin/README.md)**
+
+---
+
 ## 🧠 What I Am Trying to Get Better At
 
 A big reason I started documenting this is so I can look back and see the difference between what I understood at the beginning and what I understand later.
@@ -159,11 +176,11 @@ Right now I am deliberately working on:
 
 The lab is still young, so there is a lot left to build.
 
-The 4 TB bulk-storage integration is now complete at the host level, including filesystem creation, persistent mounting, and an initial directory structure. The next step is to begin using that storage from application containers.
+The 4 TB bulk-storage integration is complete at the host level and is now actively being used by Jellyfin through an LXC bind mount. The next media-related work is a separate containerized DVD-ripping and ingestion workflow rather than folding that process into the Jellyfin project itself.
 
 Planned or developing projects include:
 
-- Jellyfin media server
+- Containerized DVD ripping / media ingestion
 - Immich photo backup
 - Backup and recovery strategy
 - Monitoring and resource dashboards
@@ -187,6 +204,8 @@ Some of those plans will probably change as I learn more. That is part of what I
 ![Tailscale](https://img.shields.io/badge/Tailscale-Remote%20Access-informational)
 ![Syncthing](https://img.shields.io/badge/Syncthing-File%20Sync-informational)
 ![Obsidian](https://img.shields.io/badge/Obsidian-Notes-informational)
+![Jellyfin](https://img.shields.io/badge/Jellyfin-Media%20Server-informational)
+![Intel Quick Sync](https://img.shields.io/badge/Intel-Quick%20Sync-informational)
 ![SSH](https://img.shields.io/badge/SSH-Administration-informational)
 
 Badges here mean **"I have used this in the lab"**, not **"I am an expert in this technology."**
