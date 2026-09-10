@@ -18,7 +18,7 @@ This is an **active beginner homelab**, not a finished environment.
 
 The current goal is to keep adding useful services while gradually building stronger fundamentals in:
 
-`Linux` · `Networking` · `Proxmox` · `DNS` · `Containers` · `Remote Access` · `Storage` · `Troubleshooting`
+`Linux` · `Networking` · `Proxmox` · `DNS` · `Containers` · `Remote Access` · `Storage` · `Monitoring` · `Troubleshooting`
 
 ### Current project progress
 
@@ -30,7 +30,8 @@ The current goal is to keep adding useful services while gradually building stro
 | 4 | [Self-Hosted Obsidian Vault Synchronization](projects/04-obsidian-syncthing/README.md) | ✅ Running | Syncthing, Linux services, multi-device sync, versioning |
 | 5 | [Jellyfin Media Server Deployment on Proxmox](projects/05-jellyfin/README.md) | ✅ Running / Remotely Tested | LXC storage bind mounts, Linux permissions, Intel Quick Sync/VA-API, private remote streaming |
 | 6 | [DVD Ripping and Hardware-Accelerated Media Encoding on Proxmox](projects/06-dvd-ripping/README.md) | ✅ Working / Manually Tested | Optical-device passthrough, DVD structure, FFmpeg, VA-API HEVC, stream selection, media troubleshooting |
-| 7 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
+| 7 | [Physical Homelab Monitoring Dashboard](projects/07-physical-homelab-dashboard/README.md) | ✅ Working / Standalone | Embedded networking, Arduino/C++, I²C sensors, Proxmox APIs, JSON, `lm-sensors`, systemd |
+| 8 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
 
@@ -53,6 +54,7 @@ The current goal is to keep adding useful services while gradually building stro
 - **Windows laptop** — installer creation, administration, general workstation
 - **ClockworkPi uConsole** — portable Linux/radio/network experimentation
 - **Android phone** — remote administration, synchronized notes, and real-world client testing
+- **Raspberry Pi Pico W** — standalone physical monitoring dashboard with local environmental sensing and live Proxmox telemetry
 
 ### Current high-level layout
 
@@ -74,8 +76,12 @@ The current goal is to keep adding useful services while gradually building stro
               LXC      App       Service    LXC        LXC
                                   │          │           │
                       Fedora ↔ Server ↔ Android          │
-                                             │           │
-                                             └──── 4 TB HDD
+                         │                   │           │
+                         │                   └──── 4 TB HDD
+                         │
+                         └──── Wi-Fi/API ───► Pico Dashboard
+                                               │
+                                               └── SHT41
 ```
 
 This diagram is intentionally simplified and uses no sensitive addressing information.
@@ -172,6 +178,22 @@ This became one of the more troubleshooting-heavy projects in the lab. Different
 
 ---
 
+## Project #7: Physical Homelab Monitoring Dashboard
+
+I wanted the lab's health visible without needing to open the Proxmox interface, so I built a standalone physical dashboard around a Raspberry Pi Pico W and a 3.5-inch LCD.
+
+The display combines two kinds of telemetry. It reads room temperature and humidity directly from an SHT41 over I²C, while live host and service information comes over Wi-Fi from Proxmox. A dedicated read-only Proxmox API token provides CPU, RAM, uptime, and LXC/VM state. Because the Proxmox status endpoint I was using did not expose CPU package temperature directly, I also created a minimal Python helper backed by `lm-sensors` and managed it with systemd.
+
+The finished unit runs from a wall power adapter and boots into the dashboard without a development laptop attached.
+
+**Things I touched:**
+
+`Raspberry Pi Pico W` · `Arduino/C++` · `TFT_eSPI` · `I²C` · `SHT41` · `Wi-Fi` · `REST APIs` · `JSON` · `Proxmox API tokens` · `lm-sensors` · `Python` · `systemd`
+
+➡️ **[Read Project #7](projects/07-physical-homelab-dashboard/README.md)**
+
+---
+
 ## 🧠 What I Am Trying to Get Better At
 
 A big reason I started documenting this is so I can look back and see the difference between what I understood at the beginning and what I understand later.
@@ -192,14 +214,14 @@ Right now I am deliberately working on:
 
 The lab is still young, so there is a lot left to build.
 
-The 4 TB bulk-storage integration is complete at the host level and is now actively used by both Jellyfin and the separate DVD-ripping/media-ingestion container. The ripping process is working as a manual, verified workflow; future automation will be added only after I am comfortable with the edge cases I found during testing.
+The 4 TB bulk-storage integration is complete at the host level and is now actively used by both Jellyfin and the separate DVD-ripping/media-ingestion container. The ripping process is working as a manual, verified workflow. The first physical monitoring dashboard is also working and now combines live Proxmox telemetry with local environmental sensing.
 
 Planned or developing projects include:
 
 - Immich photo backup
 - DVD-ingestion automation and validation
 - Backup and recovery strategy
-- Monitoring and resource dashboards
+- Additional monitoring, alerting, and dashboard pages
 - Local DNS improvements
 - VLANs and network segmentation
 - Firewall rules and access-control experiments
@@ -223,6 +245,9 @@ Some of those plans will probably change as I learn more. That is part of what I
 ![Jellyfin](https://img.shields.io/badge/Jellyfin-Media%20Server-informational)
 ![FFmpeg](https://img.shields.io/badge/FFmpeg-Media%20Processing-informational)
 ![Intel Quick Sync](https://img.shields.io/badge/Intel-Quick%20Sync-informational)
+![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Pico%20W-informational)
+![Arduino](https://img.shields.io/badge/Arduino-C%2B%2B-informational)
+![systemd](https://img.shields.io/badge/systemd-Service-informational)
 ![SSH](https://img.shields.io/badge/SSH-Administration-informational)
 
 Badges here mean **"I have used this in the lab"**, not **"I am an expert in this technology."**
