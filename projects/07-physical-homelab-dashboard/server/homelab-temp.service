@@ -1,0 +1,12 @@
+[Unit]
+Description=Homelab CPU Temperature API
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/homelab-temp.py
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target
