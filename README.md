@@ -8,7 +8,7 @@ I am not presenting this repository as if I already know everything about Linux,
 
 Each project includes what I was trying to accomplish, what I configured, what confused me, what broke, how I tested it, and what I learned from getting it working.
 
-> 🔒 **Public portfolio note:** Documentation is sanitized. Example private IP addresses may be substituted for real values, and passwords, tokens, public IP addresses, private keys, private Tailscale hostnames/domains, device IDs, and other sensitive identifiers are not intentionally published.
+> 🔒 **Public portfolio note:** Documentation is sanitized. Example private IP addresses may be substituted for real values, and passwords, tokens, public IP addresses, private keys, private Tailscale hostnames/domains, device IDs, recovery material, and other sensitive identifiers are not intentionally published.
 
 ---
 
@@ -18,7 +18,7 @@ This is an **active beginner homelab**, not a finished environment.
 
 The current goal is to keep adding useful services while gradually building stronger fundamentals in:
 
-`Linux` · `Networking` · `Proxmox` · `DNS` · `Containers` · `Remote Access` · `Storage` · `Monitoring` · `Troubleshooting`
+`Linux` · `Networking` · `Proxmox` · `DNS` · `Containers` · `Remote Access` · `Storage` · `Monitoring` · `Backup & Recovery` · `Troubleshooting`
 
 ### Current project progress
 
@@ -31,7 +31,8 @@ The current goal is to keep adding useful services while gradually building stro
 | 5 | [Jellyfin Media Server Deployment on Proxmox](projects/05-jellyfin/README.md) | ✅ Running / Remotely Tested | LXC storage bind mounts, Linux permissions, Intel Quick Sync/VA-API, private remote streaming |
 | 6 | [DVD Ripping and Hardware-Accelerated Media Encoding on Proxmox](projects/06-dvd-ripping/README.md) | ✅ Working / Manually Tested | Optical-device passthrough, DVD structure, FFmpeg, VA-API HEVC, stream selection, media troubleshooting |
 | 7 | [Physical Homelab Monitoring Dashboard](projects/07-physical-homelab-dashboard/README.md) | ✅ Working / Standalone | Embedded networking, Arduino/C++, I²C sensors, Proxmox APIs, JSON, `lm-sensors`, systemd |
-| 8 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
+| 8 | [Self-Hosted Bitwarden Lite Password Manager](projects/08-bitwarden-lite/README.md) | ✅ Running / Backed Up / Restore Tested | Security-sensitive self-hosting, Docker, SQLite, Tailscale HTTPS, 2FA, backup automation, disaster recovery |
+| 9 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
 
@@ -70,18 +71,16 @@ The current goal is to keep adding useful services while gradually building stro
                                    │
                                    ▼
                               Proxmox VE
-               ┌────────┬──────────┼────────┬──────────┐
-               │        │          │        │          │
-            Pi-hole  War Room  Syncthing Jellyfin  DVD Ripper
-              LXC      App       Service    LXC        LXC
-                                  │          │           │
-                      Fedora ↔ Server ↔ Android          │
-                         │                   │           │
-                         │                   └──── 4 TB HDD
-                         │
-                         └──── Wi-Fi/API ───► Pico Dashboard
-                                               │
-                                               └── SHT41
+        ┌────────┬──────────┬──────────┬─────────┬──────────┬────────────┐
+        │        │          │          │         │          │            │
+     Pi-hole  War Room  Syncthing  Jellyfin  DVD Ripper  Bitwarden  Monitoring
+       LXC      App       Service      LXC        LXC        Lite      Dashboard
+                                              │             │
+                                              │             └── Private HTTPS
+                                              │                 via Tailscale
+                                              │
+                                              └──── 4 TB HDD
+                                                   └── Backups
 ```
 
 This diagram is intentionally simplified and uses no sensitive addressing information.
@@ -194,6 +193,22 @@ The finished unit runs from a wall power adapter and boots into the dashboard wi
 
 ---
 
+## Project #8: Self-Hosted Bitwarden Lite Password Manager
+
+I wanted to deploy a service where security, availability, and recovery mattered more than convenience alone, so I built a private self-hosted password-management service using Bitwarden Lite.
+
+The application runs in a dedicated unprivileged Debian LXC with Docker and SQLite. Remote access is provided through private HTTPS over Tailscale rather than a public router port-forward. I tested synchronization between a mobile client and a Linux browser extension, verified that previously synchronized credentials remained available offline, enabled two-factor authentication, disabled open registration, and stored recovery information separately from the vault.
+
+The project also pushed backup work beyond simply creating archive files. I automated daily backups to a separate physical HDD with systemd, added retention handling and failure-safe service restart behavior, then restored a production backup into a fresh temporary LXC. The restored Bitwarden instance started successfully and the SQLite database passed an integrity check before the temporary environment was removed.
+
+**Things I touched:**
+
+`Bitwarden Lite` · `Docker` · `Docker Compose` · `SQLite` · `Debian 13` · `LXC` · `Tailscale Serve` · `HTTPS` · `2FA` · `systemd timers` · `Backup automation` · `Disaster recovery`
+
+➡️ **[Read Project #8](projects/08-bitwarden-lite/README.md)**
+
+---
+
 ## 🧠 What I Am Trying to Get Better At
 
 A big reason I started documenting this is so I can look back and see the difference between what I understood at the beginning and what I understand later.
@@ -207,6 +222,7 @@ Right now I am deliberately working on:
 - Understanding DNS, DHCP, routing, switching, VLANs, and firewalling through actual use.
 - Building toward CCNA-level networking knowledge.
 - Writing documentation that another person could follow without having been there when I built it.
+- Treating backups and restore testing as part of operating a service rather than as an afterthought.
 
 ---
 
@@ -214,13 +230,13 @@ Right now I am deliberately working on:
 
 The lab is still young, so there is a lot left to build.
 
-The 4 TB bulk-storage integration is complete at the host level and is now actively used by both Jellyfin and the separate DVD-ripping/media-ingestion container. The ripping process is working as a manual, verified workflow. The first physical monitoring dashboard is also working and now combines live Proxmox telemetry with local environmental sensing.
+The 4 TB bulk-storage integration is complete at the host level and is now actively used by multiple services. The ripping process is working as a manual, verified workflow. The physical monitoring dashboard is working as a standalone device, and the password-manager project now has automated local backups plus a verified restore procedure.
 
 Planned or developing projects include:
 
 - Immich photo backup
+- Encrypted off-site backup for critical service data
 - DVD-ingestion automation and validation
-- Backup and recovery strategy
 - Additional monitoring, alerting, and dashboard pages
 - Local DNS improvements
 - VLANs and network segmentation
@@ -243,6 +259,9 @@ Some of those plans will probably change as I learn more. That is part of what I
 ![Syncthing](https://img.shields.io/badge/Syncthing-File%20Sync-informational)
 ![Obsidian](https://img.shields.io/badge/Obsidian-Notes-informational)
 ![Jellyfin](https://img.shields.io/badge/Jellyfin-Media%20Server-informational)
+![Bitwarden](https://img.shields.io/badge/Bitwarden-Lite-informational)
+![Docker](https://img.shields.io/badge/Docker-Containers-informational)
+![SQLite](https://img.shields.io/badge/SQLite-Database-informational)
 ![FFmpeg](https://img.shields.io/badge/FFmpeg-Media%20Processing-informational)
 ![Intel Quick Sync](https://img.shields.io/badge/Intel-Quick%20Sync-informational)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Pico%20W-informational)
