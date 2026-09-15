@@ -1,18 +1,20 @@
 # Project #6: DVD Ripping and Hardware-Accelerated Media Encoding on Proxmox
 
-> **Status:** ✅ Working / Manually tested across multiple discs  
-> **Purpose:** Build a dedicated media-ingestion container that can read personally owned DVDs, extract the main feature, encode it efficiently, and place the finished file into the Jellyfin media library  
-> **Focus:** Proxmox/LXC, optical-device passthrough, Linux device access, DVD structure, FFmpeg, Intel VA-API, HEVC, audio/subtitle selection, troubleshooting, media verification
+> **Status:** ✅ Working / Automated workflow tested across multiple DVDs  
+> **Purpose:** Build a dedicated media-ingestion container that can read DVDs, identify and encode a selected title, verify the result, and safely place the finished file into the Jellyfin media library  
+> **Focus:** Proxmox/LXC, optical-device passthrough, Linux device access, DVD-Video structure, FFmpeg, Intel VA-API, HEVC, stream selection, automation, validation, and troubleshooting
 
 ## Why I Chose This Project
 
-Once Jellyfin was running, I needed a repeatable way to get media from discs I own into the library without turning the Jellyfin container itself into a general-purpose ripping workstation.
+Once Jellyfin was running, I needed a repeatable way to move media from DVDs into the library without turning the Jellyfin container itself into a ripping workstation.
 
-I decided to make the ripping workflow its own Proxmox LXC. That kept media ingestion separate from media serving and gave me a place to experiment with optical-drive passthrough, GPU access, FFmpeg, DVD navigation, subtitles, and encoding without changing the Jellyfin application container every time I tested something.
+I built the ripping workflow in its own Proxmox LXC. That kept media ingestion separate from media serving and gave me a place to experiment with optical-drive passthrough, GPU access, FFmpeg, DVD navigation, subtitles, encoding, recovery, and validation without changing the Jellyfin application container every time I tested something.
 
-This project is still intentionally hands-on. I have not wrapped the process in a one-command automation script yet. For now, I am manually inspecting each disc, backing it up, identifying the correct title and streams, choosing an appropriate video filter, encoding it, verifying the result, and only then moving it into Jellyfin.
+The project started as a completely manual workflow. I intentionally learned and tested each stage first: inspect the disc, create a backup, identify the correct DVD title, inspect streams, choose filters, encode, verify the result, and only then move it into Jellyfin.
 
-> **Public portfolio note:** This documentation is about the infrastructure and encoding workflow. It does not publish disc contents, decryption keys, credentials, private addresses, or other sensitive/environment-specific identifiers.
+After the manual process had been tested across multiple DVDs, I turned the proven workflow into an interactive `ripdvd` script. The automation still pauses for human decisions where guessing could be dangerous, but it now handles most of the repetitive work and includes several failure-safe recovery paths.
+
+> **Public portfolio note:** This documentation focuses on infrastructure, automation, and troubleshooting. It does not publish disc contents, credentials, private addresses, device-specific secrets, or other sensitive/environment-specific identifiers. DVD examples are intentionally described generically rather than by title.
 
 ---
 
@@ -32,7 +34,8 @@ This project is still intentionally hands-on. I have not wrapped the process in 
 | GPU device | Intel `/dev/dri` render device passed through to the container |
 | Working storage | Bind-mounted HDD directory at `/work` |
 | Jellyfin media target | Bind-mounted Jellyfin storage at `/media` |
-| Main tools | `dvdbackup`, FFmpeg/ffprobe, libdvdcss, VA-API, MakeMKV (tested), CCExtractor |
+| Main tools | `dvdbackup`, FFmpeg/ffprobe, libdvdcss, VA-API, `libx265`, `vainfo` |
+| Automation | Interactive Bash wrapper: `ripdvd` |
 
 ---
 
@@ -42,21 +45,22 @@ This project is still intentionally hands-on. I have not wrapped the process in 
 - Pass the physical optical drive into an LXC container.
 - Give the container access to the Intel integrated GPU for hardware-assisted HEVC encoding.
 - Store temporary DVD backups on the large HDD rather than filling the container root filesystem.
-- Write completed media directly into the existing Jellyfin storage hierarchy.
+- Write completed media into the existing Jellyfin storage hierarchy.
 - Preserve the correct display aspect ratio rather than stretching video to fill a screen.
-- Select the correct main audio track and preserve useful alternate-language audio when appropriate.
-- Preserve subtitles when the workflow supports them correctly.
+- Select the correct audio and subtitle streams instead of assuming a fixed stream layout.
 - Handle both progressive and interlaced DVD material.
-- Verify runtime, codecs, aspect ratio, field order, language tags, and playback before considering a rip complete.
-- Learn how to troubleshoot discs that do not behave like a clean single-file video source.
+- Prefer fast hardware encoding, but recover automatically when a DVD exposes a hardware-filter edge case.
+- Detect obviously truncated output before it reaches Jellyfin.
+- Reuse an existing DVD backup after an interrupted run rather than forcing another full optical read.
+- Avoid overwriting an existing library file.
+- Log successful and failed runs.
+- Keep the workflow understandable enough that I can troubleshoot it instead of treating the script as a black box.
 
 ---
 
 ## Container and Device Design
 
-The media-ingestion container is deliberately separate from CT 103, which runs Jellyfin.
-
-Conceptually the design is:
+The media-ingestion container is deliberately separate from the LXC that runs Jellyfin.
 
 ```text
                      HP EliteDesk 800 G4 SFF
@@ -70,7 +74,6 @@ Conceptually the design is:
       DVD Ripping LXC                    Jellyfin LXC
       Debian 13                          Debian 13
              │                                 │
-             │                                 │
       /dev/sr0 optical drive                    │
       /dev/sg0 SCSI generic                     │
       /dev/dri render device                    │
@@ -80,220 +83,546 @@ Conceptually the design is:
                      /work          /media
                        │              │
                   DVD backup      Jellyfin library
-                  + encoding      movies / tv / music
+                  + encoding
 ```
 
-The container root filesystem stays relatively small because the large temporary DVD backup and final media files live on the dedicated HDD.
+The container root filesystem stays relatively small because the large temporary DVD backup and final media files live on the bulk-storage HDD.
 
 ---
 
 ## Optical Drive Passthrough
 
-Passing a physical DVD drive into an LXC was one of the first new parts of this project.
-
-The drive needed more than the normal block-device path. The container was given access to both:
+The DVD drive needs more than a filesystem path. The container is given access to both the optical block device and its SCSI-generic interface:
 
 ```text
 /dev/sr0
 /dev/sg0
 ```
 
-The LXC configuration also needed matching device permissions so applications inside the container could communicate with the optical hardware.
+The LXC configuration also needs matching device permissions so applications inside the container can communicate with the physical drive.
 
-I verified the device from inside the container before trying to build the ripping workflow around it.
-
-This helped me understand that device passthrough is not just about making a path appear in a container. The device type, major/minor numbers, cgroup permissions, mount entry, and application access all have to line up.
+This was useful practice with Linux device types, major/minor numbers, cgroup permissions, and the difference between making a device path visible and actually making the device usable.
 
 ---
 
 ## Intel GPU Passthrough and VA-API
 
-The host's Intel UHD 630 is also exposed to the ripping container through `/dev/dri`.
+The host's Intel UHD 630 is exposed to the ripping container through `/dev/dri`.
 
 I installed the Intel media driver and used `vainfo` to confirm that the container could initialize the GPU and that HEVC encoding was available.
 
-The working hardware-encode path uses FFmpeg with the VA-API render device, for example:
+The hardware encode path uses FFmpeg with the render device and VA-API:
 
 ```bash
 -vaapi_device /dev/dri/renderD128
 -c:v hevc_vaapi
+-qp 24
 ```
 
-For a normal progressive DVD source, the video filter is kept simple:
+For progressive material, the filter path is:
 
 ```text
 format=nv12,hwupload
 ```
 
-For material that is actually interlaced or mixed, I tested deinterlacing before hardware upload instead of blindly applying the same filter to every disc.
+For top-field-first interlaced material, the safe path is:
 
-That distinction became important because DVD video is not always stored the same way even when the final playback looks similar on a television.
+```text
+bwdif=mode=send_frame:parity=tff:deint=interlaced,format=nv12,hwupload
+```
 
----
+Bottom-field-first material can use the same pattern with `parity=bff`.
 
-## The Workflow I Ended Up Trusting
-
-My first assumption was that ripping a DVD would mostly be a matter of pointing an encoder at the disc and choosing the longest file.
-
-The testing showed that DVD-Video is much more structured than that. VOB files, IFO navigation, titles, chapters, audio tracks, subtitles, angles, timestamps, and disc authoring choices all matter.
-
-The workflow that proved the most reliable is now:
-
-### 1. Inspect the disc
-
-I start with `dvdbackup` in information mode to identify:
-
-- Disc title
-- Title sets
-- Likely main feature
-- Aspect ratio
-- Number of angles
-- Audio tracks
-- Subtitle tracks
-- Chapter count
-
-### 2. Create a full DVD backup
-
-Instead of encoding directly from the optical drive, I make a full mirror to the HDD first.
-
-This gives the encoder a stable local copy and means the optical drive does not need to be continuously involved during the encoding stage.
-
-### 3. Read the backup as DVD-Video
-
-One of the biggest improvements was using FFmpeg's dedicated `dvdvideo` demuxer against the backed-up DVD directory.
-
-That allowed FFmpeg to follow DVD navigation and expose proper titles, chapter markers, language-tagged audio, subtitles, runtime, and aspect-ratio information.
-
-This was significantly more reliable than simply concatenating raw VOB files.
-
-### 4. Inspect the streams with `ffprobe`
-
-Before encoding, I check the selected title for:
-
-- Runtime
-- Video format
-- Frame rate
-- Progressive/interlaced state
-- Sample and display aspect ratio
-- Audio languages and channel layouts
-- Subtitle languages
-
-I do not assume that stream 0 is always the audio track I want.
-
-### 5. Choose the video path
-
-For progressive content, I normally use Intel VA-API HEVC encoding directly.
-
-For interlaced or mixed sources, I use a deinterlacing filter before handing the frames to VA-API.
-
-I tested inverse-telecine approaches as well, but one full encode demonstrated that a short sample can look correct while the complete title develops timestamp problems. Because of that, I now favor the safer full-runtime result unless I have verified the entire pipeline.
-
-### 6. Copy audio and subtitles when practical
-
-DVD AC3 audio can usually be copied rather than re-encoded.
-
-Where a disc contains useful alternate audio, such as original-language and English tracks, both can be retained in the MKV and tagged by language.
-
-### 7. Verify before moving into Jellyfin
-
-After encoding, I use `ffprobe` to confirm the final file before it is added to the library.
-
-I check:
-
-- Codec
-- Resolution
-- Aspect ratio
-- Field order
-- Frame rate
-- Audio channels
-- Language tags
-- Subtitle presence
-- Runtime
-- File size
-
-I then test actual playback through Jellyfin instead of treating successful FFmpeg exit status as the only acceptance test.
+The script now selects the appropriate path from `ffprobe` field-order information rather than applying one filter to every DVD.
 
 ---
 
-## Troubleshooting: Why Raw VOB Concatenation Was Not Enough
+# Automation Evolution
 
-One of the early discs did not behave correctly with the first tools I tried.
+## Stage 1: Manual Workflow
 
-A direct MakeMKV attempt failed, and concatenating the movie's VOB files produced broken timing behavior.
+I did not start by writing automation.
 
-That was a useful lesson because the VOB files contained the video data, but the DVD navigation information was still important for reconstructing the title correctly.
+The first working process was deliberately manual:
 
-Using FFmpeg's `dvdvideo` demuxer against the full DVD backup solved the problem by reading the title through the DVD structure instead of treating the VOBs as unrelated generic MPEG files.
+1. Inspect a DVD with `dvdbackup`.
+2. Create a full HDD mirror of the disc.
+3. Use FFmpeg's `dvdvideo` demuxer against the backup.
+4. Probe the main title with `ffprobe`.
+5. Choose audio and subtitle streams.
+6. Decide whether the source was progressive or needed deinterlacing.
+7. Encode with Intel VA-API HEVC.
+8. Verify the output runtime and streams.
+9. Test playback in Jellyfin.
+10. Only then remove the temporary DVD backup.
 
-This became the default approach for the project.
-
----
-
-## Troubleshooting: Progressive, Interlaced, and Telecined Material
-
-Different discs reported different video characteristics.
-
-Some newer DVDs were clean progressive sources and did not need deinterlacing.
-
-Other discs contained interlaced or mixed material. For those, I tested decoded frames with FFmpeg's field-detection tools and used deinterlacing when appropriate.
-
-At one point a short inverse-telecine test looked excellent and produced a clean 23.976 fps sample. However, the complete encode developed timestamp discontinuities and ended significantly shorter than the actual movie.
-
-I discarded that result and kept the complete, safer encode instead.
-
-That changed the way I test video filters: a successful two-minute sample is useful, but it is not proof that an entire DVD title will survive the same processing chain.
+That manual phase exposed several failure modes that would have been easy to hide inside a one-command script.
 
 ---
 
-## Troubleshooting: Mid-Stream Video Parameter Change
+## Stage 2: `ripdvd` Version 1
 
-One of the strongest troubleshooting cases came from a newer 16:9 progressive DVD.
+Once the manual workflow was repeatable, I wrote the first interactive wrapper.
 
-The normal Intel VA-API encode ran successfully for more than 80 minutes and then failed at the same point every time.
+Version 1 automated the repetitive stages while keeping the risky decisions visible. It could:
 
-FFmpeg reported that the decoded video parameters changed mid-stream, including a color-metadata change to `smpte170m`. The VA-API filter graph could not reinitialize across that transition.
+- Inspect the inserted DVD.
+- Detect the disc label.
+- Detect the main title set and likely main title.
+- Ask for a clean movie name and release year.
+- Create the DVD backup on bulk storage.
+- Probe source duration and field order.
+- Ask which audio and subtitle streams to keep.
+- Select a progressive or deinterlacing path.
+- Encode with Intel VA-API HEVC.
+- Compare source and output runtime.
+- Refuse to move a suspiciously short file into Jellyfin.
+- Place a verified file into the expected Jellyfin movie directory.
 
-I first tried normalizing the frames with a software scale operation before uploading them to the GPU. A short test across the problem area succeeded, but the full encode still failed at exactly the same location.
+The first full end-to-end test completed successfully, including chapters, audio, subtitles, and playback on multiple Jellyfin clients.
 
-I then switched to software HEVC encoding with `libx265`. The encoder itself handled the format change, but the full pass still stopped at the same timestamp.
+---
 
-Instead of assuming the disc was unreadable, I tested the final several minutes as a separate segment. That segment encoded successfully and proved the ending was intact.
+## Stage 3: `ripdvd` Version 1.1
 
-The workaround was:
+Real-world testing then exposed usability and recovery cases that Version 1 did not handle well enough.
 
-1. Encode the first portion up to several seconds before the transition.
-2. Start a second encode after that cut point and run it to the end.
-3. Verify both segment runtimes.
-4. Concatenate the two compatible encoded segments without another video encode.
-5. Verify the final runtime against the source title.
-6. Test playback in Jellyfin.
+Version 1.1 added the following.
 
-The resulting file was within about one second of the source title's runtime and played correctly.
+### Deliberate movie naming
 
-That failure ended up being more educational than a normal successful encode because it forced me to isolate whether the problem was the physical disc, DVD navigation, GPU encoder, software encoder, filter graph, or the particular point in the stream.
+The disc label is displayed as reference, but the user must enter a clean title instead of silently accepting whatever text the DVD author used as the volume label.
+
+This keeps the filesystem clean even when Jellyfin would have been able to repair the displayed metadata later.
+
+### Existing-file protection
+
+Before doing expensive work, the script checks whether the destination file already exists.
+
+If it does, the script stops rather than overwriting a known-good library file.
+
+### Existing-backup resume
+
+If a working directory already exists, the script offers:
+
+```text
+[R] Resume using existing backup
+[D] Delete backup and start over
+[C] Cancel
+```
+
+This was added after a remote shell disconnected during a DVD backup. The process had stopped, but the backup data was already present on disk.
+
+Instead of reading the physical DVD again, the resumed run reused the existing backup and continued into probing and encoding.
+
+### Clear audio and subtitle menus
+
+Instead of requiring the user to interpret raw FFmpeg stream numbers, Version 1.1 presents type-relative choices such as:
+
+```text
+[0] eng | ac3 | 6 ch | 5.1(side)
+[1] eng | dts | 7 ch | 6.1
+[2] eng | ac3 | 2 ch | stereo
+```
+
+Multiple tracks can be selected with a comma-separated input such as:
+
+```text
+0,1
+```
+
+Subtitle selection uses the same style and can also retain multiple streams.
+
+### Encode-plan confirmation
+
+Before encoding starts, the script prints the selected plan:
+
+```text
+Movie:       Example Movie (Year)
+Title:       1
+Angle:       1
+Video mode:  Progressive
+Audio:       0,1
+Subtitles:   0
+Destination: /media/movies/Example Movie (Year)/Example Movie (Year).mkv
+```
+
+This gives one final opportunity to catch a wrong title, stream selection, or destination before a long encode begins.
+
+### Field-order aware filtering
+
+Version 1.1 distinguishes:
+
+- progressive
+- top-field-first
+- bottom-field-first
+- unknown/mixed cases
+
+The script selects the corresponding FFmpeg filter rather than assuming every older DVD needs the same deinterlacing path.
+
+### Duration verification
+
+The source duration is recorded before encoding. After encoding, `ffprobe` checks the output duration and calculates the absolute difference.
+
+If the difference exceeds the configured tolerance, the script treats the result as failed verification and does **not** move it into Jellyfin.
+
+This is important because a media encoder can exit successfully even when the produced file is shorter than the selected DVD title.
+
+### Rip logging
+
+Successful and failed attempts are written to a log including useful fields such as:
+
+- title
+- source duration
+- output duration
+- duration difference
+- encoder used
+- video mode
+- audio selection
+- subtitle selection
+- output size
+
+### Optional cleanup
+
+After a verified successful encode, the script can delete the temporary DVD backup, but the default workflow encourages playback testing in Jellyfin first.
+
+---
+
+# Automatic Hardware-to-Software Recovery
+
+One of the most useful changes came from repeated failures involving a mid-stream MPEG-2 parameter change.
+
+On some DVDs, FFmpeg would encode almost the entire title through VA-API and then report a message similar to:
+
+```text
+Reconfiguring filter graph because video parameters changed to yuv420p(tv, smpte170m)
+Impossible to convert between the formats supported by the filter 'hwupload' and an automatically inserted scale filter
+Error reinitializing filters
+Conversion failed
+```
+
+The important observation was that the physical DVD and backup were still readable. The failure occurred specifically in the hardware-upload/filter path when the decoded stream changed parameters.
+
+I verified this by encoding the same affected region in software. Software encoding handled the parameter transition correctly.
+
+Version 1.1 now reacts to a failed VA-API encode by preserving the backup and selections and offering:
+
+```text
+HARDWARE ENCODE FAILED
+
+Retry using software HEVC (libx265)? [Y/n]:
+```
+
+If accepted, it retries using:
+
+```text
+-c:v libx265
+-crf 22
+-preset medium
+```
+
+The same selected audio, subtitle, title, angle, and deinterlacing decisions are reused.
+
+The software result still has to pass the same runtime verification before it can enter the Jellyfin library.
+
+This fallback has now recovered multiple real DVD encodes that failed through VA-API, making it a tested recovery path rather than a theoretical feature.
+
+---
+
+# Current Automated Workflow
+
+The normal workflow is now simply:
+
+```bash
+ripdvd
+```
+
+The script then performs the following sequence:
+
+```text
+Insert DVD
+   │
+   ▼
+Inspect DVD structure
+   │
+   ▼
+Identify likely main feature
+   │
+   ▼
+Ask for clean title + year
+   │
+   ▼
+Check destination for duplicates
+   │
+   ▼
+Existing backup?
+   ├── Yes → Resume / delete / cancel
+   └── No  → Full dvdbackup mirror
+   │
+   ▼
+Probe runtime + field order + streams
+   │
+   ▼
+Choose audio/subtitles
+   │
+   ▼
+Review encode plan
+   │
+   ▼
+Try Intel VA-API HEVC
+   │
+   ├── Success ──────────────┐
+   │                         │
+   └── Failure              │
+        │                    │
+        ▼                    │
+   Offer libx265 retry       │
+        │                    │
+        └────────────────────┘
+                 │
+                 ▼
+          Verify duration
+                 │
+        ┌────────┴────────┐
+        │                 │
+      Pass              Fail
+        │                 │
+        ▼                 ▼
+ Move to Jellyfin   Preserve work files
+        │            Do not publish result
+        ▼
+ Playback test
+        │
+        ▼
+ Optional backup cleanup
+```
+
+---
+
+# Troubleshooting Guide
+
+This section documents the problems that changed the design of the workflow and the checks I would use again on another system.
+
+## 1. `dvdbackup` sees the disc, but the script cannot determine the main title set
+
+First inspect the DVD directly:
+
+```bash
+dvdbackup -i /dev/sr0 -I
+```
+
+Look for a line similar to:
+
+```text
+Title set containing the main feature is 1
+```
+
+If it exists, test the parser independently:
+
+```bash
+dvdbackup -i /dev/sr0 -I 2>&1 | \
+awk '/Title set containing the main feature is/ {
+    print "DETECTED MAIN SET:", $NF
+}'
+```
+
+If the direct command works but the script failed once, rerun the inspection before changing code. Optical-disc initialization can occasionally produce a transient read problem.
+
+If the DVD genuinely has no obvious main feature, it may need manual title selection instead of an automatic main-feature assumption.
+
+---
+
+## 2. A bonus/extras DVD contains several meaningful titles
+
+A DVD can contain many titles inside one title set. `dvdbackup -I` will show the title structure and chapter counts.
+
+Do not assume that "main feature" always means "the only content worth ripping." Bonus discs, documentaries, and collections can contain several independent pieces of content.
+
+The current movie workflow is designed primarily around one selected feature. Manual title-selection support is a logical future extension for complex extras discs.
+
+---
+
+## 3. FFmpeg prints `Couldn't find device name` when reading the HDD backup
+
+When the `dvdvideo` demuxer reads a DVD directory rather than the physical optical drive, messages such as these can appear:
+
+```text
+libdvdread: Couldn't find device name.
+libdvdnav: Can't read name block. Probably not a DVD-ROM device.
+```
+
+In this workflow, these warnings are expected when FFmpeg is reading the backed-up DVD directory. They are not by themselves evidence that the backup is broken.
+
+The more important checks are whether FFmpeg can enumerate the title, chapters, streams, and duration.
+
+---
+
+## 4. Raw VOB concatenation produces broken timing
+
+A DVD is not just a collection of MPEG files. IFO navigation data, title boundaries, chapters, angles, and timestamps matter.
+
+If concatenating VOB files produces timing problems, use FFmpeg's DVD-aware demuxer against the complete backup instead:
+
+```bash
+ffprobe \
+-f dvdvideo \
+-title 1 \
+-preindex 1 \
+-i "/work/example-dvd/Disc Directory"
+```
+
+`-preindex 1` takes longer because FFmpeg scans the title, but it produces much more reliable chapter and duration indexing.
+
+---
+
+## 5. VA-API fails near the end of an otherwise normal encode
+
+A typical failure signature is:
+
+```text
+Reconfiguring filter graph because video parameters changed ...
+Impossible to convert between the formats supported by ... hwupload ...
+Error reinitializing filters
+Conversion failed
+```
+
+This can happen when MPEG-2 video metadata changes mid-stream and the hardware filter chain cannot reinitialize.
+
+Do not immediately assume the DVD is damaged.
+
+A useful isolation test is to encode the problem area with a software encoder. If the same section completes in software, the source is readable and the problem is likely the hardware/filter path.
+
+The automated workflow now offers a full software HEVC retry with `libx265`.
+
+---
+
+## 6. FFmpeg exits successfully but the movie is too short
+
+Successful process exit is not enough.
+
+Compare the source title duration with the finished file:
+
+```bash
+ffprobe \
+-v error \
+-show_entries format=duration \
+-of default=noprint_wrappers=1:nokey=1 \
+"output.mkv"
+```
+
+The automation performs this comparison automatically and rejects output that differs beyond the configured tolerance.
+
+This check was added because some processing paths can produce a technically valid MKV that is missing part of the title.
+
+---
+
+## 7. A short inverse-telecine test looks correct, but the full encode breaks
+
+A short sample is useful, but it does not prove that an entire DVD has consistent cadence or timestamps.
+
+I tested an inverse-telecine path that looked excellent on a sample but produced major timestamp problems across the complete title.
+
+For the automated workflow, I prefer the safer deinterlacing path unless the complete source has been proven suitable for IVTC.
+
+The lesson is simple: validate the **full runtime**, not just picture quality in a short sample.
+
+---
+
+## 8. SSH disconnects during a rip
+
+If the process was attached directly to the remote shell, it may stop when that session disappears.
+
+Before reripping the DVD, inspect `/work`:
+
+```bash
+du -sh /work/* 2>/dev/null
+find /work -maxdepth 2 -type d
+```
+
+If a substantial DVD backup already exists, verify that it contains a `VIDEO_TS` directory and use the script's resume option instead of reading the whole disc again.
+
+A terminal multiplexer such as `tmux` can also protect a long-running job from SSH disconnects, but it is optional in my normal workflow.
+
+---
+
+## 9. Progressive vs interlaced handling
+
+Check field order with `ffprobe` rather than guessing based on the age of the DVD:
+
+```bash
+ffprobe \
+-v error \
+-f dvdvideo \
+-title 1 \
+-i "/work/example-dvd/Disc Directory" \
+-select_streams v:0 \
+-show_entries stream=field_order \
+-of default=noprint_wrappers=1:nokey=1
+```
+
+Common results include:
+
+```text
+progressive
+tt
+tb
+bb
+bt
+```
+
+The automation maps those values to progressive, TFF, BFF, or automatic deinterlacing behavior.
+
+---
+
+## 10. No subtitle tracks are present
+
+Not every DVD has usable subtitle streams.
+
+If `ffprobe` finds no subtitle streams, the script simply continues without mapping subtitles. That is not an error.
+
+---
+
+# Why the Validation Layer Matters
+
+The biggest design change in this project was moving from "FFmpeg finished" to "the output passed validation."
+
+A file is not considered ready just because an encoder created it.
+
+The current acceptance path is:
+
+1. Source title is successfully indexed.
+2. User confirms title and stream choices.
+3. Encoder completes.
+4. Output duration is compared with source duration.
+5. Only a verified file is moved into Jellyfin.
+6. Playback is tested on an actual Jellyfin client.
+7. Temporary backup is removed only after confidence in the final result.
+
+This protects the library from partial or silently truncated files.
 
 ---
 
 ## What I Tested
 
-I deliberately used multiple DVDs rather than deciding the project worked after one successful disc.
+The workflow has now been exercised across multiple DVDs with combinations of:
 
-The test set included a mix of:
-
-- Older and newer DVD releases
 - 4:3 and 16:9 content
-- Progressive sources
-- Interlaced/mixed sources
+- Progressive video
+- Top-field-first interlaced video
 - Stereo and 5.1 AC3 audio
-- Multiple spoken-language tracks
+- DTS audio
+- Multiple audio tracks
+- Multiple spoken languages
 - Multiple subtitle tracks
+- No subtitle tracks
 - Multi-angle DVD structure
-- Discs with unusual navigation/timestamp behavior
-- Hardware HEVC encoding
-- Software HEVC fallback
-- Split-encode and concat recovery
-
-Completed files were checked in Jellyfin rather than only inspected from the command line.
+- Bonus/documentary discs
+- Intel VA-API HEVC encoding
+- Automatic `libx265` software fallback
+- Interrupted sessions with existing-backup recovery
+- Mid-stream video-parameter changes
+- Runtime verification failures
+- Jellyfin playback on phone and television clients
 
 ---
 
@@ -303,13 +632,13 @@ Completed files were checked in Jellyfin rather than only inspected from the com
 
 - The dedicated Debian LXC runs independently of Jellyfin.
 - `/work` maps to bulk HDD storage for temporary DVD data and encodes.
-- `/media` maps to the Jellyfin media hierarchy on the same bulk-storage disk.
+- `/media` maps to the Jellyfin media hierarchy on the bulk-storage disk.
 
 ### Optical drive
 
 - The physical DVD drive is visible inside the container.
 - Both the block-device and SCSI-generic interfaces are available where required.
-- `dvdbackup` can inspect and mirror supported discs to local storage.
+- `dvdbackup` can inspect and mirror supported DVDs to local storage.
 
 ### GPU
 
@@ -319,16 +648,16 @@ Completed files were checked in Jellyfin rather than only inspected from the com
 
 ### Media output
 
-Across the tested discs I verified combinations of:
+Across the tested DVDs I verified combinations of:
 
 - HEVC 720x480 video
 - Correct 4:3 or 16:9 display aspect ratio
-- Progressive output where appropriate
-- English stereo and 5.1 AC3
-- Multiple audio languages in one MKV
+- Progressive output after processing
+- Stereo, 5.1, and selected alternate audio tracks
 - DVD subtitle streams
-- Full movie runtime
-- Jellyfin playback on a real client
+- Chapter preservation
+- Full-runtime verification
+- Jellyfin playback on multiple client types
 
 ---
 
@@ -341,45 +670,49 @@ This project gave me hands-on experience with:
 - LXC cgroup device permissions
 - Bind mounts between the Proxmox host and containers
 - DVD-Video title/VTS/chapter structure
-- CSS-capable DVD access tools
 - FFmpeg and `ffprobe`
 - FFmpeg's `dvdvideo` demuxer
 - Intel VA-API and HEVC hardware encoding
 - Software HEVC fallback with `libx265`
 - Progressive vs interlaced video
-- Field detection and deinterlacing
+- Field-order detection and deinterlacing
 - Aspect-ratio preservation
 - Audio stream selection and language tagging
 - Subtitle stream handling
-- Diagnosing timestamp and filter-graph failures
-- Segmenting and concatenating video as a recovery technique
+- Bash scripting and interactive automation
+- Input validation and overwrite protection
+- Resume/recovery design
+- Structured logging
+- Diagnosing filter-graph failures
+- Diagnosing truncated output
+- Separating source problems from encoder problems
 - Verifying output at both the file and application layers
 
-The biggest lesson was that media ingestion is not one operation. Reading the physical disc, understanding DVD structure, decoding video correctly, choosing streams, encoding, storing the result, and validating playback are separate stages that can fail independently.
+The biggest lesson was that media ingestion is not one operation. Reading the physical disc, understanding DVD structure, selecting the correct content, decoding video correctly, choosing streams, encoding, storing the result, and validating playback are separate stages that can fail independently.
+
+The automation became reliable because each of those stages was understood manually before it was scripted.
 
 ---
 
 ## Result
 
-I now have a dedicated Proxmox LXC that can ingest personally owned DVDs into the same bulk-storage hierarchy used by Jellyfin.
+I now have a dedicated Proxmox LXC with an interactive `ripdvd` workflow for ingesting DVDs into Jellyfin.
 
-The working process mirrors a disc to the HDD, reads the backup using DVD-aware navigation, inspects the title and streams, encodes the video to HEVC using Intel VA-API when the source allows it, preserves selected AC3 audio/subtitles, verifies the finished MKV, and places the result into the Jellyfin movie library.
+The script can inspect a DVD, create or resume a backup, identify a likely main title, request clean metadata, display audio/subtitle choices, select an appropriate progressive or deinterlacing path, attempt fast Intel VA-API HEVC encoding, retry automatically with `libx265` when the hardware path fails, verify the finished runtime, log the result, and only then place the file into the Jellyfin movie library.
 
-The workflow has been tested across several discs with different aspect ratios, audio layouts, language tracks, field structures, and authoring quirks. I also documented failure cases where the normal hardware pipeline was not sufficient and a software or segmented fallback was required.
+The automation has been tested repeatedly across different DVD structures and has recovered successfully from real hardware-encoding failures.
 
-It is intentionally still a manual workflow. I want the underlying process to remain understandable before I turn it into automation.
+This project evolved from a manual media-processing lab into a small fault-aware automation tool rather than a one-off collection of commands.
 
 ---
 
 ## Future Improvements
 
-- Create a safe wrapper such as `ripdvd "Movie Title" YEAR` after the manual workflow is stable enough to automate
-- Automatically identify likely main features while still allowing manual confirmation
-- Add safer automatic selection of English/original-language audio tracks
-- Improve subtitle classification and preservation
-- Add structured logging for each rip and encode
-- Automatically run `ffprobe` validation and reject obviously truncated output
-- Add cleanup logic for temporary DVD backups only after final verification
-- Add duplicate/file-exists protection before writing into the Jellyfin library
-- Test additional discs to expand the progressive/interlaced edge-case coverage
-- Document the final automation separately once it exists rather than claiming it is automated today
+- Add an explicit manual title-selection mode for complex bonus/extras DVDs.
+- Improve automatic classification of commentary versus primary audio tracks.
+- Improve subtitle classification such as full subtitles versus forced/foreign-language-only streams.
+- Add more detailed per-run logs and optional diagnostic log files.
+- Continue testing uncommon DVD authoring structures and multi-angle behavior.
+- Consider a separate TV-series workflow rather than forcing episode-based discs through the movie-oriented script.
+- For TV DVDs, investigate automatic episode discovery, per-episode naming, episode-order verification, and safe multi-file output.
+- Keep movie and TV automation separate if that produces clearer and safer behavior.
