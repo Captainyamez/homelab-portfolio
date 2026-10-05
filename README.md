@@ -32,7 +32,9 @@ The current goal is to keep adding useful services while gradually building stro
 | 6 | [DVD Ripping and Hardware-Accelerated Media Encoding on Proxmox](projects/06-dvd-ripping/README.md) | ✅ Working / Manually Tested | Optical-device passthrough, DVD structure, FFmpeg, VA-API HEVC, stream selection, media troubleshooting |
 | 7 | [Physical Homelab Monitoring Dashboard](projects/07-physical-homelab-dashboard/README.md) | ✅ Working / Standalone | Embedded networking, Arduino/C++, I²C sensors, Proxmox APIs, JSON, `lm-sensors`, systemd |
 | 8 | [Self-Hosted Bitwarden Lite Password Manager](projects/08-bitwarden-lite/README.md) | ✅ Running / Backed Up / Restore Tested | Security-sensitive self-hosting, Docker, SQLite, Tailscale HTTPS, 2FA, backup automation, disaster recovery |
-| 9 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
+| 9 | [Self-Hosted Media Automation Stack](projects/09-media-automation-stack/README.md) | ✅ Working / End-to-end tested | Docker Compose, VPN isolation, service APIs, shared storage, path mapping, remote administration |
+| 10 | [Raspberry Pi 5 Jellyfin Streaming Client](projects/10-rpi5-jellyfin-streaming-client/README.md) | ✅ Working | LibreELEC, Kodi, Jellyfin synchronization, SSH, appliance design, safe shutdown |
+| 11 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
 
@@ -56,31 +58,42 @@ The current goal is to keep adding useful services while gradually building stro
 - **ClockworkPi uConsole** — portable Linux/radio/network experimentation
 - **Android phone** — remote administration, synchronized notes, and real-world client testing
 - **Raspberry Pi Pico W** — standalone physical monitoring dashboard with local environmental sensing and live Proxmox telemetry
+- **Raspberry Pi 5** — dedicated LibreELEC/Kodi Jellyfin streaming client
 
 ### Current high-level layout
 
 ```text
-                       Internet
-                          │
-                          ▼
-                     Home Router
-                          │
-                 ┌────────┴────────┐
-                 │                 │
-           Normal Clients      HP EliteDesk
-                                   │
-                                   ▼
-                              Proxmox VE
-        ┌────────┬──────────┬──────────┬─────────┬──────────┬────────────┐
-        │        │          │          │         │          │            │
-     Pi-hole  War Room  Syncthing  Jellyfin  DVD Ripper  Bitwarden  Monitoring
-       LXC      App       Service      LXC        LXC        Lite      Dashboard
-                                              │             │
-                                              │             └── Private HTTPS
-                                              │                 via Tailscale
-                                              │
-                                              └──── 4 TB HDD
-                                                   └── Backups
+                         Internet
+                            │
+                            ▼
+                       Home Router
+                            │
+             ┌──────────────┴──────────────┐
+             │                             │
+      Normal / client devices          HP EliteDesk
+      ├── Fedora ThinkPad                  │
+      ├── Android phone                    ▼
+      └── Raspberry Pi 5              Proxmox VE
+          LibreELEC/Kodi                   │
+          Jellyfin client      ┌───────────┼───────────────────────────────┐
+                               │           │                               │
+                            Pi-hole     Application LXCs                4 TB HDD
+                                       ├── War Room                    ├── Jellyfin
+                                       ├── Syncthing                   ├── Backups
+                                       ├── Jellyfin                    ├── Ripping
+                                       ├── DVD Ripper                  └── Shared data
+                                       ├── Bitwarden Lite
+                                       └── Media Automation
+                                           ├── Seerr
+                                           ├── Radarr / Sonarr
+                                           ├── Prowlarr / Bazarr
+                                           └── qBittorrent → Gluetun → VPN
+
+                              Raspberry Pi Pico W
+                                      │
+                                      └── Live Proxmox + room monitoring
+
+                       Tailscale provides private remote access
 ```
 
 This diagram is intentionally simplified and uses no sensitive addressing information.
@@ -209,6 +222,34 @@ The project also pushed backup work beyond simply creating archive files. I auto
 
 ---
 
+## Project #9: Self-Hosted Media Automation Stack
+
+After the Jellyfin server and DVD-ingestion workflow were working, I built a separate automation stack to understand how request management, library managers, download clients, subtitles, storage paths, VPN routing, and remote administration fit together.
+
+The stack runs in its own Debian LXC with Docker Compose. qBittorrent is isolated behind Gluetun and the VPN path, while Seerr, Radarr, Sonarr, Prowlarr, and Bazarr remain on the normal container network so their APIs and local administration stay straightforward. I also tested the complete request-to-playback workflow and added a mirrored configuration backup with `rsync`.
+
+**Things I touched:**
+
+`Docker Compose` · `Gluetun` · `VPN isolation` · `qBittorrent` · `Prowlarr` · `Radarr` · `Sonarr` · `Bazarr` · `Seerr` · `Bind mounts` · `Path mapping` · `Tailscale` · `rsync`
+
+➡️ **[Read Project #9](projects/09-media-automation-stack/README.md)**
+
+---
+
+## Project #10: Raspberry Pi 5 Jellyfin Streaming Client
+
+I wanted a dedicated Jellyfin endpoint that I could understand and control instead of relying on a Fire TV, Chromecast, or another large vendor ecosystem, so I built a Raspberry Pi 5 streaming appliance around LibreELEC and Kodi.
+
+The Pi boots directly into Kodi, uses Jellyfin for Kodi to synchronize the server's movies and TV shows into Kodi's native library, and runs inside an Argon NEO enclosure. I also customized the Kodi power action so the visible Quit option performs a real safe shutdown instead of merely closing the menu.
+
+**Things I touched:**
+
+`Raspberry Pi 5` · `LibreELEC` · `Kodi` · `Jellyfin for Kodi` · `SSH` · `Library synchronization` · `Kodi actions` · `Thermal management` · `Appliance design`
+
+➡️ **[Read Project #10](projects/10-rpi5-jellyfin-streaming-client/README.md)**
+
+---
+
 ## 🧠 What I Am Trying to Get Better At
 
 A big reason I started documenting this is so I can look back and see the difference between what I understood at the beginning and what I understand later.
@@ -230,11 +271,12 @@ Right now I am deliberately working on:
 
 The lab is still young, so there is a lot left to build.
 
-The 4 TB bulk-storage integration is complete at the host level and is now actively used by multiple services. The ripping process is working as a manual, verified workflow. The physical monitoring dashboard is working as a standalone device, and the password-manager project now has automated local backups plus a verified restore procedure.
+The 4 TB bulk-storage integration is complete at the host level and is now actively used by multiple services. The ripping process is working as a manual, verified workflow. The physical monitoring dashboard is working as a standalone device, the password-manager project has automated local backups plus a verified restore procedure, the media automation stack is working end-to-end, and the Raspberry Pi 5 now serves as a dedicated LibreELEC/Kodi Jellyfin client.
 
 Planned or developing projects include:
 
 - Immich photo backup
+- Native Tailscale validation on the Raspberry Pi 5 streaming client
 - Encrypted off-site backup for critical service data
 - DVD-ingestion automation and validation
 - Additional monitoring, alerting, and dashboard pages
@@ -264,7 +306,10 @@ Some of those plans will probably change as I learn more. That is part of what I
 ![SQLite](https://img.shields.io/badge/SQLite-Database-informational)
 ![FFmpeg](https://img.shields.io/badge/FFmpeg-Media%20Processing-informational)
 ![Intel Quick Sync](https://img.shields.io/badge/Intel-Quick%20Sync-informational)
-![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Pico%20W-informational)
+![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Pico%20W%20%2B%20Pi%205-informational)
+![LibreELEC](https://img.shields.io/badge/LibreELEC-Kodi-informational)
+![Kodi](https://img.shields.io/badge/Kodi-Jellyfin%20Client-informational)
+![Gluetun](https://img.shields.io/badge/Gluetun-VPN%20Gateway-informational)
 ![Arduino](https://img.shields.io/badge/Arduino-C%2B%2B-informational)
 ![systemd](https://img.shields.io/badge/systemd-Service-informational)
 ![SSH](https://img.shields.io/badge/SSH-Administration-informational)
