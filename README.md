@@ -248,6 +248,24 @@ The Pi boots directly into Kodi, uses Jellyfin for Kodi to synchronize the serve
 
 ➡️ **[Read Project #10](projects/10-rpi5-jellyfin-streaming-client/README.md)**
 
+
+---
+
+## Project #11: Centralized Homelab Dashboard with Glance
+
+As the number of self-hosted services increased, I wanted one browser-based landing page that could show the health of the lab and provide fast access to the interfaces I actually use.
+
+I deployed Glance in its own Debian LXC with Docker Compose, added private remote access through Tailscale Serve, reused my existing Proxmox telemetry endpoint for CPU/RAM/temperature/storage/uptime data, expanded service monitoring across the lab, and built a responsive launcher with separate LAN and Tailscale buttons for each service.
+
+The project also gave me a useful troubleshooting exercise when a malformed YAML paste caused Glance to restart repeatedly. I worked backward from failed local HTTP checks to Docker logs, corrected the configuration, and then verified the service locally before testing the remote path again.
+
+**Things I touched:**
+
+`Glance` · `Docker Compose` · `Debian 13` · `LXC` · `Tailscale Serve` · `YAML` · `HTML/CSS` · `JSON APIs` · `Service monitoring` · `Responsive UI`
+
+➡️ **[Read Project #11](projects/11-glance-dashboard/README.md)**
+
+
 ---
 
 ## 🧠 What I Am Trying to Get Better At
@@ -271,7 +289,7 @@ Right now I am deliberately working on:
 
 The lab is still young, so there is a lot left to build.
 
-The 4 TB bulk-storage integration is complete at the host level and is now actively used by multiple services. The ripping process is working as a manual, verified workflow. The physical monitoring dashboard is working as a standalone device, the password-manager project has automated local backups plus a verified restore procedure, the media automation stack is working end-to-end, and the Raspberry Pi 5 now serves as a dedicated LibreELEC/Kodi Jellyfin client.
+The 4 TB bulk-storage integration is complete at the host level and is now actively used by multiple services. The ripping process is working as a manual, verified workflow. The physical monitoring dashboard is working as a standalone device, the password-manager project has automated local backups plus a verified restore procedure, the media automation stack is working end-to-end, the Raspberry Pi 5 now serves as a dedicated LibreELEC/Kodi Jellyfin client, and Glance provides a centralized web dashboard for host health, service monitoring, and LAN/Tailscale launch links.
 
 Planned or developing projects include:
 
@@ -309,7 +327,7 @@ Some of those plans will probably change as I learn more. That is part of what I
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Pico%20W%20%2B%20Pi%205-informational)
 ![LibreELEC](https://img.shields.io/badge/LibreELEC-Kodi-informational)
 ![Kodi](https://img.shields.io/badge/Kodi-Jellyfin%20Client-informational)
-![Gluetun](https://img.shields.io/badge/Gluetun-VPN%20Gateway-informational)
+![Gluetun](https://img.shields.io/badge/Gluetun-VPN%20Gateway-informational)\n![Glance](https://img.shields.io/badge/Glance-Homelab%20Dashboard-informational)
 ![Arduino](https://img.shields.io/badge/Arduino-C%2B%2B-informational)
 ![systemd](https://img.shields.io/badge/systemd-Service-informational)
 ![SSH](https://img.shields.io/badge/SSH-Administration-informational)
