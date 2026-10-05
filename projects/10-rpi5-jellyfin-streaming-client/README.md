@@ -215,12 +215,15 @@ I verified the client in stages:
 - The customized power action calls `Shutdown()`.
 - The Pi shuts down cleanly from the Kodi interface.
 
-### Hardware
+### Hardware and display compatibility
 - Pi operates inside the Argon NEO enclosure.
 - Thermal pads are installed at the intended chip-to-case contact points.
 - HDMI output and network connectivity remain stable during normal playback.
 - K06 keyboard and trackpad provide local Kodi control.
 - K06 IR learning provides basic TV power/volume control after learning commands from the local TV remote.
+- Playback has been verified on a **55-inch 4K television** using the Pi 5's micro-HDMI output into a standard HDMI display input.
+- Playback has also been verified on a **15-inch external monitor with built-in speakers** using the Pi 5's micro-HDMI output and the monitor's mini-HDMI input.
+- Video and audio both worked on the external monitor, confirming the box can handle more than one display type and HDMI connector arrangement.
 
 ### Remote / travel testing
 - Streaming was tested successfully away from home through the travel router.
@@ -277,6 +280,8 @@ The biggest lesson was that the client side of self-hosting matters too. Running
 
 I now have a dedicated Raspberry Pi 5 streaming box that boots directly into Kodi, synchronizes my Jellyfin movies and TV shows into the native interface, plays media from the homelab, and can be shut down safely from the on-screen menu.
 
+I have verified the same client on both a 55-inch 4K TV and a 15-inch external monitor with built-in speakers. That test covered two different display sizes and two different downstream HDMI connector types: standard HDMI on the TV and mini-HDMI on the portable monitor, with the Raspberry Pi 5 providing micro-HDMI output in both cases.
+
 I have also verified it away from home through my travel router over both Wi-Fi and Ethernet. The K06 mini keyboard gives me keyboard and trackpad control for Kodi while its IR-learning side can take over basic TV power and volume controls at a hotel or another house.
 
 That makes the project both a privacy-conscious alternative to mainstream streaming hardware and a practical portable Jellyfin client.
@@ -290,4 +295,4 @@ That makes the project both a privacy-conscious alternative to mainstream stream
 - Expand the K06 IR profile beyond power/volume where useful
 - Measure temperatures and fan behavior during long playback sessions
 - Document clean-update/rollback procedures for LibreELEC and Kodi add-ons
-- Test additional TVs and HDMI environments
+- Test additional TVs, resolutions, receivers, and HDMI environments beyond the already-verified 55-inch 4K TV and 15-inch mini-HDMI monitor
