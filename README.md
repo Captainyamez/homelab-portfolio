@@ -33,7 +33,7 @@ The current goal is to keep adding useful services while gradually building stro
 | 7 | [Physical Homelab Monitoring Dashboard](projects/07-physical-homelab-dashboard/README.md) | ✅ Working / Standalone | Embedded networking, Arduino/C++, I²C sensors, Proxmox APIs, JSON, `lm-sensors`, systemd |
 | 8 | [Self-Hosted Bitwarden Lite Password Manager](projects/08-bitwarden-lite/README.md) | ✅ Running / Backed Up / Restore Tested | Security-sensitive self-hosting, Docker, SQLite, Tailscale HTTPS, 2FA, backup automation, disaster recovery |
 | 9 | [Self-Hosted Media Automation Stack](projects/09-media-automation-stack/README.md) | ✅ Working / End-to-end tested | Docker Compose, VPN isolation, service APIs, shared storage, path mapping, remote administration |
-| 10 | [Raspberry Pi 5 Jellyfin Streaming Client](projects/10-rpi5-jellyfin-streaming-client/README.md) | ✅ Working | LibreELEC, Kodi, Jellyfin synchronization, SSH, appliance design, safe shutdown |
+| 10 | [Raspberry Pi 5 Jellyfin Streaming Client](projects/10-rpi5-jellyfin-streaming-client/README.md) | ✅ Working / Travel Tested | Privacy-focused client design, LibreELEC, Kodi, Jellyfin sync, travel networking, K06 keyboard/IR remote |
 | 11 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
@@ -238,13 +238,13 @@ The stack runs in its own Debian LXC with Docker Compose. qBittorrent is isolate
 
 ## Project #10: Raspberry Pi 5 Jellyfin Streaming Client
 
-I wanted a dedicated Jellyfin endpoint that I could understand and control instead of relying on a Fire TV, Chromecast, or another large vendor ecosystem, so I built a Raspberry Pi 5 streaming appliance around LibreELEC and Kodi.
+I wanted a dedicated Jellyfin endpoint that I could understand and control without relying on the advertising, telemetry, and account ecosystems of mainstream streaming-device vendors, so I built a Raspberry Pi 5 streaming appliance around LibreELEC and Kodi.
 
-The Pi boots directly into Kodi, uses Jellyfin for Kodi to synchronize the server's movies and TV shows into Kodi's native library, and runs inside an Argon NEO enclosure. I also customized the Kodi power action so the visible Quit option performs a real safe shutdown instead of merely closing the menu.
+The Pi boots directly into Kodi, uses Jellyfin for Kodi to synchronize the server's movies and TV shows into Kodi's native library, and runs inside an Argon NEO enclosure. I use a K06 mini keyboard with an integrated trackpad and IR-learning TV controls, and I have verified the box away from home through my travel router over both Wi-Fi and Ethernet. I also customized the Kodi power action so the visible Quit option performs a real safe shutdown instead of merely closing the menu.
 
 **Things I touched:**
 
-`Raspberry Pi 5` · `LibreELEC` · `Kodi` · `Jellyfin for Kodi` · `SSH` · `Library synchronization` · `Kodi actions` · `Thermal management` · `Appliance design`
+`Raspberry Pi 5` · `LibreELEC` · `Kodi` · `Jellyfin for Kodi` · `Privacy-conscious design` · `Travel networking` · `Wi-Fi/Ethernet testing` · `K06 keyboard/IR remote` · `SSH` · `Library synchronization` · `Safe shutdown`
 
 ➡️ **[Read Project #10](projects/10-rpi5-jellyfin-streaming-client/README.md)**
 
