@@ -1,14 +1,14 @@
 # Project #10: Raspberry Pi 5 Jellyfin Streaming Client
 
 > **Status:** ✅ Working / Daily-use capable  
-> **Purpose:** Build a small dedicated Jellyfin streaming appliance without relying on a Fire TV, Chromecast, or other large vendor ecosystem  
-> **Focus:** Raspberry Pi 5, LibreELEC, Kodi, Jellyfin for Kodi, library synchronization, appliance-style shutdown, thermal management
+> **Purpose:** Build a portable, privacy-focused Jellyfin streaming appliance that avoids the account, advertising, and behavioral-tracking ecosystems of mainstream streaming-device vendors  
+> **Focus:** Raspberry Pi 5, LibreELEC, Kodi, Jellyfin for Kodi, privacy-conscious client design, travel networking, K06 mini keyboard/IR remote, library synchronization, appliance-style shutdown, thermal management
 
 ## Why I Chose This Project
 
 After building the Jellyfin server, I wanted a client device that I could understand and control from the operating system upward.
 
-Commercial streaming boxes are easy to buy, but this project gave me an excuse to build a dedicated endpoint around open-source software and my existing self-hosted media server.
+Commercial streaming boxes are easy to buy, but I specifically wanted to avoid making my primary streaming client part of a corporate ecosystem built around vendor accounts, advertising, telemetry, and viewing/behavioral data collection. This project gave me a way to build a dedicated endpoint around open-source software and my existing self-hosted media server instead.
 
 The goal was simple:
 
@@ -18,6 +18,8 @@ The goal was simple:
 - play media reliably
 - shut down safely from the couch
 - remain portable enough to use with another TV while traveling
+- avoid unnecessary advertising and behavioral/data tracking from mainstream streaming-device vendors
+- use one compact input device for both Kodi control and basic TV control when traveling
 
 > **Public portfolio note:** Private server addresses, credentials, Tailscale identities, and other environment-specific information are intentionally omitted.
 
@@ -32,10 +34,34 @@ The client is built around:
 - HDMI connection to the display/TV
 - Argon NEO case
 - passive thermal pads plus case cooling
+- **K06 mini keyboard/remote** with keyboard keys, integrated trackpad, and IR-learning controls
 - wired Ethernet or Wi-Fi depending on where it is being used
-- keyboard during setup, with normal operation designed around the TV interface
 
 The Pi is powerful enough for the client role while still being small enough to pack with my travel networking gear.
+
+---
+
+## K06 Mini Keyboard and IR-Learning Remote
+
+For normal use, I paired the streaming box with a **K06 mini keyboard/remote** instead of carrying a full keyboard and a separate TV remote.
+
+The device combines:
+
+- a compact keyboard for text entry and Kodi shortcuts
+- an integrated trackpad for pointer control
+- IR-learning controls on the reverse side
+
+The IR-learning side is especially useful when traveling. At a house, hotel, or other temporary location, I can teach the K06 the basic infrared commands from the TV's original remote—at minimum power and volume—so I do not need to juggle a separate TV remote just to control the display.
+
+That gives the travel kit a simple operating model:
+
+```text
+K06 mini keyboard
+├── keyboard / trackpad ──► Raspberry Pi 5 / Kodi
+└── learned IR commands ──► TV power / volume
+```
+
+The result is one handheld controller for both the streaming box and the basic TV functions I need most often.
 
 ---
 
@@ -137,7 +163,7 @@ The goal is not extreme cooling; it is stable, quiet operation in a compact encl
 
 At home, the Pi can reach the Jellyfin server over the local network.
 
-The wider design also fits my travel setup:
+The wider design also fits my travel setup, and I have now tested that workflow away from home:
 
 ```text
 Jellyfin server at home
@@ -155,9 +181,16 @@ Jellyfin server at home
        TV
 ```
 
-The Pi is intended to become a portable trusted Jellyfin endpoint that I can connect to a hotel or friend's TV instead of signing into a random smart-TV ecosystem.
+I tested the streaming box away from home using my travel router in both of the network modes I expect to use in practice:
 
-Native Tailscale support on the streaming client is a planned next step; it is not documented here as completed until I have installed and validated it on this device.
+- **Wi-Fi:** the Raspberry Pi 5 connected wirelessly to the travel router and streamed successfully.
+- **Ethernet:** the Raspberry Pi 5 was connected directly to the travel router by Ethernet and streamed successfully.
+
+That confirmed the client is not just an at-home proof of concept. It works as a portable endpoint on a remote network and can use either wireless or wired LAN connectivity depending on the room and equipment available.
+
+The Pi is intended to remain a trusted Jellyfin endpoint that I can connect to a hotel or friend's TV instead of signing into a smart-TV or mainstream streaming-device ecosystem that I do not control.
+
+Native Tailscale support on the streaming client itself is still a planned next step; the completed remote test used the travel-router setup.
 
 ---
 
@@ -186,12 +219,20 @@ I verified the client in stages:
 - Pi operates inside the Argon NEO enclosure.
 - Thermal pads are installed at the intended chip-to-case contact points.
 - HDMI output and network connectivity remain stable during normal playback.
+- K06 keyboard and trackpad provide local Kodi control.
+- K06 IR learning provides basic TV power/volume control after learning commands from the local TV remote.
+
+### Remote / travel testing
+- Streaming was tested successfully away from home through the travel router.
+- Wi-Fi connectivity from the Pi 5 to the travel router was verified.
+- Ethernet connectivity from the Pi 5 to the travel router was verified.
+- The same client and Jellyfin interface worked outside the home LAN.
 
 ---
 
 ## Privacy and Design Decisions
 
-This project was partly motivated by wanting a streaming endpoint that is under my control.
+This project was strongly motivated by wanting a streaming endpoint that is under my control and that does not depend on the advertising and data-collection model common to mainstream streaming hardware.
 
 Instead of making the device dependent on a large vendor account ecosystem, the main software layers are:
 
@@ -200,7 +241,7 @@ Instead of making the device dependent on a large vendor account ecosystem, the 
 - Jellyfin
 - my own self-hosted server
 
-That does not automatically make the device perfectly private or secure, but it gives me much more visibility into what the box is running and how it reaches my media.
+That does not automatically make the device perfectly private or secure, but it removes a major reason I did not want to use a mainstream streaming stick or box: I do not need the client itself to be tied to a large vendor's advertising profile, viewing telemetry, or account ecosystem just to reach my own media. It also gives me much more visibility into what the box is running and how it reaches my media.
 
 I also avoid publishing private server addresses or remote-access identifiers in this portfolio.
 
@@ -222,7 +263,11 @@ This project gave me hands-on experience with:
 - Kodi action customization
 - Safe Linux shutdown behavior
 - Raspberry Pi thermal management
+- Travel-router testing over both Wi-Fi and Ethernet
+- IR-learning remote control
+- Combining keyboard, trackpad, and TV controls into one portable input device
 - Designing a purpose-built endpoint instead of using a general-purpose desktop OS
+- Privacy-oriented client design that minimizes dependence on advertising-driven streaming platforms
 
 The biggest lesson was that the client side of self-hosting matters too. Running a server is only half the system; the endpoint still needs reliable networking, synchronization, UI behavior, and safe power management.
 
@@ -232,15 +277,17 @@ The biggest lesson was that the client side of self-hosting matters too. Running
 
 I now have a dedicated Raspberry Pi 5 streaming box that boots directly into Kodi, synchronizes my Jellyfin movies and TV shows into the native interface, plays media from the homelab, and can be shut down safely from the on-screen menu.
 
-It also gives me a portable platform that I can continue extending for private remote Jellyfin access while traveling.
+I have also verified it away from home through my travel router over both Wi-Fi and Ethernet. The K06 mini keyboard gives me keyboard and trackpad control for Kodi while its IR-learning side can take over basic TV power and volume controls at a hotel or another house.
+
+That makes the project both a privacy-conscious alternative to mainstream streaming hardware and a practical portable Jellyfin client.
 
 ---
 
 ## Future Improvements
 
 - Install and validate Tailscale directly on the LibreELEC client
-- Test the complete remote/travel workflow through the GL.iNet travel router
-- Add a compact remote-control solution
+- Test additional remote-network and hotel captive-portal scenarios
+- Expand the K06 IR profile beyond power/volume where useful
 - Measure temperatures and fan behavior during long playback sessions
 - Document clean-update/rollback procedures for LibreELEC and Kodi add-ons
 - Test additional TVs and HDMI environments
