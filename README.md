@@ -34,7 +34,8 @@ The current goal is to keep adding useful services while gradually building stro
 | 8 | [Self-Hosted Bitwarden Lite Password Manager](projects/08-bitwarden-lite/README.md) | ✅ Running / Backed Up / Restore Tested | Security-sensitive self-hosting, Docker, SQLite, Tailscale HTTPS, 2FA, backup automation, disaster recovery |
 | 9 | [Self-Hosted Media Automation Stack](projects/09-media-automation-stack/README.md) | ✅ Working / End-to-end tested | Docker Compose, VPN isolation, service APIs, shared storage, path mapping, remote administration |
 | 10 | [Raspberry Pi 5 Jellyfin Streaming Client](projects/10-rpi5-jellyfin-streaming-client/README.md) | ✅ Working / Travel Tested | Privacy-focused client design, LibreELEC, Kodi, Jellyfin sync, travel networking, K06 keyboard/IR remote |
-| 11 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
+| 11 | [Centralized Homelab Dashboard with Glance](projects/11-glance-dashboard/README.md) | ✅ Running / Remotely Accessible | Glance, Docker Compose, service monitoring, custom HTML/CSS, JSON telemetry, Tailscale Serve |
+| 12 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
 
