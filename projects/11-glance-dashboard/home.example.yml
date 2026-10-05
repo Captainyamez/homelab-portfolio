@@ -1,0 +1,83 @@
+# Sanitized example for portfolio use.
+# Replace example addresses and hostnames with values from your own environment.
+
+- name: Home
+  columns:
+    - size: full
+      widgets:
+        - type: custom-api
+          title: System Health
+          cache: 10s
+          url: http://192.168.50.10:8765/health
+          template: |
+            <div class="health-grid">
+              <div class="health-item">
+                <div class="health-value">{{ .JSON.Float "cpu_percent" }}%</div>
+                <div class="health-label">CPU</div>
+              </div>
+              <div class="health-item">
+                <div class="health-value">{{ .JSON.Float "ram_percent" }}%</div>
+                <div class="health-label">RAM</div>
+              </div>
+              <div class="health-item">
+                <div class="health-value">{{ .JSON.Float "cpu_temp" }}°C</div>
+                <div class="health-label">SERVER TEMP</div>
+              </div>
+              <div class="health-item">
+                <div class="health-value">{{ .JSON.Float "storage_used_percent" }}%</div>
+                <div class="health-label">STORAGE</div>
+              </div>
+              <div class="health-item health-uptime">
+                <div class="health-value">{{ .JSON.String "uptime_human" }}</div>
+                <div class="health-label">UPTIME</div>
+              </div>
+            </div>
+
+        - type: monitor
+          title: Core Services
+          cache: 1m
+          sites:
+            - title: Proxmox
+              url: https://192.168.50.10:8006
+              icon: si:proxmox
+              allow-insecure: true
+            - title: Pi-hole
+              url: http://192.168.50.20/admin/
+              icon: si:pihole
+            - title: Jellyfin
+              url: http://192.168.50.30:8096
+              icon: si:jellyfin
+
+        - type: html
+          title: Service Launcher
+          css-class: service-launcher
+          source: |
+            <div class="service-grid">
+              <div class="launcher-section-title">CORE</div>
+
+              <div class="service-card">
+                <div class="service-name">Proxmox</div>
+                <div class="service-links">
+                  <a href="https://192.168.50.10:8006" target="_blank">LAN</a>
+                  <a href="https://pve.example-tailnet.ts.net/" target="_blank">TAILSCALE</a>
+                </div>
+              </div>
+
+              <div class="service-card">
+                <div class="service-name">Pi-hole</div>
+                <div class="service-links">
+                  <a href="http://192.168.50.20/admin/" target="_blank">LAN</a>
+                  <a href="https://pihole.example-tailnet.ts.net/" target="_blank">TAILSCALE</a>
+                </div>
+              </div>
+
+              <div class="launcher-section-title">MEDIA</div>
+
+              <div class="service-card">
+                <div class="service-name">Jellyfin</div>
+                <div class="service-links">
+                  <a href="http://192.168.50.30:8096" target="_blank">LAN</a>
+                  <a href="https://jellyfin.example-tailnet.ts.net/" target="_blank">TAILSCALE</a>
+                </div>
+              </div>
+            </div>
