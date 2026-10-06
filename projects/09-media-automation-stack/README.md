@@ -2,7 +2,7 @@
 
 > **Status:** ✅ Working / End-to-end tested / Remotely accessible  
 > **Purpose:** Build a self-hosted media-management workflow around Jellyfin while separating download traffic, application traffic, storage, and remote administration  
-> **Focus:** Docker Compose, Gluetun, Proton VPN, qBittorrent, Prowlarr, Radarr, Sonarr, Bazarr, Seerr, bind mounts, Tailscale, backup discipline
+> **Focus:** Docker Compose, Gluetun, Proton VPN, qBittorrent, Prowlarr, Radarr, Sonarr, Bazarr+, Provider Hub, Seerr, bind mounts, Tailscale, backup discipline
 
 ## Why I Chose This Project
 
@@ -34,7 +34,7 @@ Request ───────────►│ Seerr            │
                     │   └──► Sonarr ───┼──┤
                     │                  │  │
                     │ Prowlarr ────────┼──┤
-                    │ Bazarr           │  │
+                    │ Bazarr+          │  │
                     │                  │  ▼
                     │ Gluetun ◄────────┴ qBittorrent
                     │   │
@@ -73,7 +73,7 @@ Current services include:
 - **Prowlarr** — indexer management
 - **Radarr** — movie library automation
 - **Sonarr** — TV library automation
-- **Bazarr** — subtitle automation
+- **Bazarr+** — subtitle automation with Provider Hub support
 - **Seerr** — request interface
 
 The LXC has access to the bulk-storage filesystem through controlled bind mounts rather than storing large media files inside the LXC root disk.
@@ -152,7 +152,7 @@ Seerr
                       Jellyfin
 ```
 
-Prowlarr supplies indexer configuration to the library managers, while Bazarr handles subtitle acquisition for supported library content.
+Prowlarr supplies indexer configuration to the library managers, while Bazarr+ handles subtitle acquisition for supported library content.
 
 I tested the full path with a movie request and confirmed that the media was downloaded, imported into the correct library, and played successfully through Jellyfin.
 
@@ -172,11 +172,23 @@ This was also where I ran into a real troubleshooting case: a movie associated w
 
 ## Subtitle Automation
 
-Bazarr initially returned server errors during setup.
+The stack originally used the standard LinuxServer Bazarr image. It worked, but the built-in provider selection left the subtitle workflow too dependent on a small number of sources and exposed practical provider download limits when adding full TV seasons.
 
-Rather than rebuild the entire stack, I reset the Bazarr configuration and tested it again independently. After the reset, subtitle searching and retrieval worked correctly.
+I migrated the existing service to **Bazarr+** using the `ghcr.io/lavx/bazarr:latest` image while preserving the existing `/config` bind mount, media paths, Sonarr/Radarr integrations, and port mapping. Before the change, I created both the normal stack backup and an additional pre-migration copy of the Bazarr configuration.
 
-That was a useful reminder to isolate the failing component before changing a working multi-service stack.
+The first Bazarr+ startup adopted the existing upstream Bazarr database and completed its schema migration successfully. Because that migration included a one-way database change, the pre-migration backup is the rollback point if I ever need to return to the original Bazarr image.
+
+Bazarr+ added a **Provider Hub**, giving me a broader set of subtitle sources without manually patching the application. I also tuned subtitle behavior to reduce unnecessary provider usage by disabling automatic subtitle upgrades and increasing missing-subtitle search intervals.
+
+After the migration I verified that:
+
+- Bazarr+ started healthy on the existing port.
+- Existing Sonarr and Radarr connections remained active.
+- Existing subtitle history and library state were preserved.
+- New external subtitles were detected by Jellyfin.
+- External subtitles were successfully rendered through my Kodi/Jellyfin client after the client refreshed.
+
+Earlier in the project, standard Bazarr also returned server errors during initial setup. Resetting only Bazarr rather than rebuilding the entire stack was a useful reminder to isolate the failing component before changing a working multi-service environment.
 
 ---
 
@@ -203,7 +215,7 @@ A copy is maintained on the bulk-storage backup path.
 The refresh command I use is:
 
 ```bash
-rsync -rltD --delete /opt/media-stack/ /data/backups/media-stack/
+rsync -rlD --delete /opt/media-stack/ /data/backups/media-stack/
 ```
 
 The `--delete` option makes the destination a mirror of the source, so files removed from the live configuration are also removed from the backup mirror.
@@ -229,7 +241,7 @@ I tested the stack at multiple layers:
 - Radarr and Sonarr can communicate with qBittorrent.
 - Root-folder tests pass.
 - Seerr can send requests to Radarr/Sonarr.
-- Bazarr can retrieve subtitles.
+- Bazarr+ can retrieve subtitles and use Provider Hub-installed sources.
 
 ### End-to-end workflow
 - A test request reached the correct library manager.
@@ -237,7 +249,7 @@ I tested the stack at multiple layers:
 - The library manager imported the file.
 - Jellyfin detected the final media.
 - Playback completed successfully.
-- Subtitle automation was verified separately.
+- Subtitle automation was verified separately, including playback of externally downloaded subtitles through Jellyfin/Kodi.
 
 ---
 
@@ -257,6 +269,8 @@ This project gave me hands-on experience with:
 - Prowlarr/Radarr/Sonarr integration
 - Request-management workflows
 - Subtitle automation
+- Application migration with persistent Docker bind-mounted configuration
+- Provider Hub / provider diversification
 - Remote-path mapping
 - Tailscale remote administration
 - `rsync` configuration backups
@@ -268,7 +282,7 @@ The biggest lesson was that a stack like this is really a collection of APIs, pa
 
 ## Result
 
-I now have a working media-management stack that connects request handling, library management, subtitle automation, download handling, shared storage, and Jellyfin.
+I now have a working media-management stack that connects request handling, library management, Bazarr+ subtitle automation, download handling, shared storage, and Jellyfin.
 
 The project also gave me practical experience separating traffic by security/privacy requirement instead of treating every service in a container as if it should share the same network path.
 
