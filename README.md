@@ -87,7 +87,7 @@ The current goal is to keep adding useful services while gradually building stro
                                        └── Media Automation
                                            ├── Seerr
                                            ├── Radarr / Sonarr
-                                           ├── Prowlarr / Bazarr
+                                           ├── Prowlarr / Bazarr+
                                            └── qBittorrent → Gluetun → VPN
 
                               Raspberry Pi Pico W
@@ -227,11 +227,11 @@ The project also pushed backup work beyond simply creating archive files. I auto
 
 After the Jellyfin server and DVD-ingestion workflow were working, I built a separate automation stack to understand how request management, library managers, download clients, subtitles, storage paths, VPN routing, and remote administration fit together.
 
-The stack runs in its own Debian LXC with Docker Compose. qBittorrent is isolated behind Gluetun and the VPN path, while Seerr, Radarr, Sonarr, Prowlarr, and Bazarr remain on the normal container network so their APIs and local administration stay straightforward. I also tested the complete request-to-playback workflow and added a mirrored configuration backup with `rsync`.
+The stack runs in its own Debian LXC with Docker Compose. qBittorrent is isolated behind Gluetun and the VPN path, while Seerr, Radarr, Sonarr, Prowlarr, and Bazarr+ remain on the normal container network so their APIs and local administration stay straightforward. I also tested the complete request-to-playback workflow and added a mirrored configuration backup with `rsync`.
 
 **Things I touched:**
 
-`Docker Compose` · `Gluetun` · `VPN isolation` · `qBittorrent` · `Prowlarr` · `Radarr` · `Sonarr` · `Bazarr` · `Seerr` · `Bind mounts` · `Path mapping` · `Tailscale` · `rsync`
+`Docker Compose` · `Gluetun` · `VPN isolation` · `qBittorrent` · `Prowlarr` · `Radarr` · `Sonarr` · `Bazarr+` · `Provider Hub` · `Seerr` · `Bind mounts` · `Path mapping` · `Tailscale` · `rsync`
 
 ➡️ **[Read Project #9](projects/09-media-automation-stack/README.md)**
 
@@ -328,7 +328,9 @@ Some of those plans will probably change as I learn more. That is part of what I
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Pico%20W%20%2B%20Pi%205-informational)
 ![LibreELEC](https://img.shields.io/badge/LibreELEC-Kodi-informational)
 ![Kodi](https://img.shields.io/badge/Kodi-Jellyfin%20Client-informational)
-![Gluetun](https://img.shields.io/badge/Gluetun-VPN%20Gateway-informational)\n![Glance](https://img.shields.io/badge/Glance-Homelab%20Dashboard-informational)
+![Gluetun](https://img.shields.io/badge/Gluetun-VPN%20Gateway-informational)
+![Bazarr+](https://img.shields.io/badge/Bazarr%2B-Subtitles-informational)
+![Glance](https://img.shields.io/badge/Glance-Homelab%20Dashboard-informational)
 ![Arduino](https://img.shields.io/badge/Arduino-C%2B%2B-informational)
 ![systemd](https://img.shields.io/badge/systemd-Service-informational)
 ![SSH](https://img.shields.io/badge/SSH-Administration-informational)
