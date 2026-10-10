@@ -5,12 +5,11 @@
 > **Focus:** DNS, DHCP/DNS interaction, container networking, troubleshooting
 
 ## Why I Chose This Project
+Once Proxmox was running, I wanted to build something that actually did a job on my home network. Pi-hole made sense. It could filter DNS requests for my devices, and I'd have a reason to learn what DNS and DHCP were doing instead of only memorizing their definitions.
 
-After getting Proxmox running, I wanted the next project to be something that would actually affect my home network instead of just existing as a lab exercise.
+I figured the Pi-hole installation itself would be the main task. It wasn't. Getting the container online was one part; getting the router and clients to use it properly was another. And when changing those settings affected internet access, suddenly the difference between "the network is connected" and "DNS is working" mattered a lot.
 
-Pi-hole seemed like a good fit because it gave me a reason to learn more about DNS, static IP addressing, containers, router settings, and troubleshooting while also providing a useful service for the devices in my house.
-
-I did not start this project already understanding every part of DNS or DHCP. A large part of the project was learning what each layer was doing as problems came up.
+I went into this knowing the basics, but not yet comfortable troubleshooting the whole chain. By the time queries were flowing into the dashboard, I had a much better picture of how the pieces connect—and why I should test them one at a time.
 
 > **Public portfolio note:** IP addresses and other environment-specific details shown here are sanitized documentation examples. Credentials, public IP addresses, private keys, and remote-access identifiers are not published.
 
