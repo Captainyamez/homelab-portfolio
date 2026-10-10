@@ -5,14 +5,11 @@
 > **Focus:** Jellyfin, Proxmox/LXC, storage bind mounts, Linux permissions, Intel Quick Sync/VA-API, remote access, troubleshooting
 
 ## Why I Chose This Project
+I added a 4 TB hard drive to the Proxmox server and wanted to put it to use. Jellyfin was something I would actually watch, not just another service to install for practice.
 
-After expanding my Proxmox host with a 4 TB SATA HDD, I wanted to start using that storage for an actual service rather than leaving it as empty capacity.
+My first thought was simple: make a media library and stream it to my phone. The setup pulled in a lot more than that. Where should the application live? Where should the video files live? How does an LXC see a directory on the Proxmox host? What permissions does it need? And could I make use of the EliteDesk's Intel integrated graphics instead of asking the CPU to handle everything?
 
-Jellyfin was a good next step because it brought several parts of the homelab together at once: virtualization, Linux storage, application deployment, media organization, hardware acceleration, and remote access.
-
-The goal was to create a dedicated Jellyfin container that stores the application itself on the NVMe-backed Proxmox storage while reading the actual media library from the larger HDD.
-
-I also wanted to be able to use Jellyfin from my phone both at home and away from home without forwarding its web port directly to the public internet.
+I wanted the operating system and Jellyfin application on the NVMe, with the movie and TV files on the larger HDD. That separation shaped the rest of the project. I worked through the mount, package repository issues, GPU access, and remote playback rather than treating "the web page loads" as the finish line.
 
 > **Public portfolio note:** Real private IP addresses, credentials, Tailscale addresses, and other environment-specific identifiers are intentionally omitted or generalized.
 
