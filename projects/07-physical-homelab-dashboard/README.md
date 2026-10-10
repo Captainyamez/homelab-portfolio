@@ -5,17 +5,13 @@
 > **Focus:** Raspberry Pi Pico W, Arduino/C++, I²C sensors, Wi-Fi, REST APIs, JSON, Proxmox API authentication, Linux hardware monitoring, systemd
 
 ## Why I Chose This Project
+At this point the server was doing quite a few things, but checking on it usually meant opening Proxmox in a browser. I wanted to be able to walk into the room and see the important information immediately.
 
-After building several services in Proxmox, I wanted a way to see the state of the lab without opening a browser or SSH session every time I walked into the room.
+That turned into a small physical dashboard built with a Raspberry Pi Pico, a Waveshare 3.5-inch display, and an SHT41 temperature/humidity sensor.
 
-The goal became a small standalone display that could answer two different questions at a glance:
+I started with the screen and kept adding pieces. First a usable layout, then Wi-Fi and live Proxmox data, then room conditions. CPU temperature was a separate challenge because the Proxmox API data I was using didn't provide it directly. I ended up writing a small helper service on the host to make that reading available.
 
-1. Is the homelab itself healthy and are the main services running?
-2. What are the server and room conditions right now?
-
-I used a Raspberry Pi Pico W with a 3.5-inch Waveshare LCD and an SHT41 temperature/humidity sensor. The Pico reads the environmental sensor locally, connects to the network over Wi-Fi, queries the Proxmox API for infrastructure data, and queries a small read-only helper service on the Proxmox host for the CPU package temperature.
-
-The result is a physical monitoring appliance that boots automatically from wall power and refreshes itself without needing a laptop attached.
+What I like about this build is that it's not another browser tab. It sits on the desk, runs from wall power, and shows actual information from my lab. Getting there made me work across embedded code, Linux services, sensors, HTTP, JSON, and API permissions.
 
 > **Public portfolio note:** Network addresses and API credentials shown in this documentation and example source files are placeholders. The real Wi-Fi credentials, Proxmox token secret, and environment-specific addresses are not published.
 
