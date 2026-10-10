@@ -6,20 +6,11 @@
 
 ## Why I Chose This Project
 
-After building the Jellyfin server, I wanted a client device that I could understand and control from the operating system upward.
+After building my own Jellyfin server, I started thinking about the other end of the connection: the device plugged into the TV.
 
-Commercial streaming boxes are easy to buy, but I specifically wanted to avoid making my primary streaming client part of a corporate ecosystem built around vendor accounts, advertising, telemetry, and viewing/behavioral data collection. This project gave me a way to build a dedicated endpoint around open-source software and my existing self-hosted media server instead.
+I could have bought another streaming stick, but I wanted to avoid relying on a vendor account and the advertising and tracking that often come with those devices. Building a Raspberry Pi 5 client with LibreELEC and Kodi sounded more interesting—and gave me control over what ran on it.
 
-The goal was simple:
-
-- boot directly into a TV-friendly interface
-- connect to my Jellyfin server
-- present the Jellyfin library natively inside Kodi
-- play media reliably
-- shut down safely from the couch
-- remain portable enough to use with another TV while traveling
-- avoid unnecessary advertising and behavioral/data tracking from mainstream streaming-device vendors
-- use one compact input device for both Kodi control and basic TV control when traveling
+First I just wanted the Jellyfin libraries to show up and play. Then I started adjusting the skin, continue watching, remote control, shutdown options, and how to pack the whole setup for travel. Some of those small usability details took more effort than the initial installation. Getting a video to play was a milestone, but I wanted something I would actually enjoy using from the couch.
 
 > **Public portfolio note:** Private server addresses, credentials, Tailscale identities, and other environment-specific information are intentionally omitted.
 
