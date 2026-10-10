@@ -2,11 +2,13 @@
 
 > **Learning by building. Breaking things carefully. Writing down what I learn.**
 
-This repository documents the beginning of my homelab journey using a repurposed **HP EliteDesk 800 G4 SFF** running **Proxmox VE**.
+This started with a used **HP EliteDesk 800 G4 SFF** and a pretty simple idea: I wanted to stop just reading about Linux, servers, and networking and actually run something myself.
 
-I am not presenting this repository as if I already know everything about Linux, networking, virtualization, or self-hosting. The point of the lab is the opposite: I am using real hardware and real services to move those subjects from theory into hands-on experience.
+I installed **Proxmox VE**, got the machine onto my network, and started adding services. One project led to another. Pi-hole made me troubleshoot DNS and DHCP. Jellyfin pulled me into storage permissions and GPU passthrough. Remote access made me think harder about security. Then I started building tools to monitor the whole thing—and a Raspberry Pi client to actually use the media server.
 
-Each project includes what I was trying to accomplish, what I configured, what confused me, what broke, how I tested it, and what I learned from getting it working.
+A lot of it worked. Some of it didn't. I've spent plenty of time staring at logs, undoing a bad setting, or realizing I didn't fully understand what a command was doing. That's part of why I keep this repository.
+
+This is not a finished lab or a claim that I'm an expert. It's a record of how I'm learning: what I set out to do, the process I followed, what broke along the way, the tests that proved a fix, and what finally clicked. I want the technical details to stay useful, but I also want the story to sound like the experience of actually building it.
 
 > 🔒 **Public portfolio note:** Documentation is sanitized. Example private IP addresses may be substituted for real values, and passwords, tokens, public IP addresses, private keys, private Tailscale hostnames/domains, device IDs, recovery material, and other sensitive identifiers are not intentionally published.
 
