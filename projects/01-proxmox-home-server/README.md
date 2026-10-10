@@ -5,12 +5,13 @@
 > **Focus:** Virtualization, Linux networking, storage, troubleshooting
 
 ## Why I Built This
+This is where the whole homelab started.
 
-This was the starting point of my homelab journey.
+I wanted to get beyond watching videos about servers and networking and have an actual machine to learn on. A used **HP EliteDesk 800 G4 SFF** seemed like a reasonable place to start: small enough to keep at home, affordable, but capable of running more than one service.
 
-I wanted a small home server that I could actually learn on instead of only watching videos or reading about servers and networking. I picked up a used **HP EliteDesk 800 G4 SFF** and decided to turn it into a Proxmox host that I could keep expanding over time.
+So I installed Proxmox. At first the goal really was that basic—get a hypervisor running and reach its web interface from another device. Once that worked, I started thinking about what else the machine could do. Containers, remote access, a larger storage drive, services I'd actually use.
 
-At this point I was not coming into the project as a Proxmox expert. A lot of the value of this project was figuring out what the different pieces were doing, breaking things down when something did not work, and learning how the hardware, network, and hypervisor fit together.
+I didn't know Proxmox well going in. Some of the first lessons were less about virtualization and more about figuring out what was happening when the network configuration looked right but the interface still wasn't reachable. I wanted this write-up to keep those parts, because getting through them was the learning.
 
 > **Public portfolio note:** IP addresses and other environment-specific identifiers in this repository are sanitized or replaced with documentation examples. Passwords, tokens, public IP addresses, private keys, and private remote-access identifiers are not published.
 
