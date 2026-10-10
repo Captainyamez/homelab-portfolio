@@ -5,24 +5,13 @@
 > **Focus:** Syncthing, Proxmox/LXC, Tailscale, Linux services, multi-device synchronization, file versioning
 
 ## Why I Chose This Project
+While studying for the CCNA, I started keeping more of my notes in Obsidian on my Fedora ThinkPad. That was fine until I wanted to pull them up on my phone. I didn't want two versions of the same notes or to keep copying files around.
 
-As I started studying networking and CCNA material more seriously, my Obsidian vault became something I wanted available on more than one device.
+I already had a server sitting at home. So I thought: why not use it?
 
-My notes originally lived on my Fedora ThinkPad. I wanted to read or edit those same notes from my Android phone, and eventually from additional devices, without maintaining separate copies or manually transferring files.
+Syncthing became the way to tie the ThinkPad, Android phone, and an always-on LXC together. It seemed straightforward until I had to think about which directory actually held the vault, how the devices identified one another, what happened off the home Wi-Fi, and how to tell whether changes had really arrived.
 
-Instead of subscribing to another synchronization service, I decided to see whether I could use my own homelab as part of the solution. I also wanted the setup to continue working when my phone or ThinkPad was away from my home network.
-
-The final goal became:
-
-```text
-Fedora ThinkPad ─┐
-                 │
-                 ├── Syncthing over local network or Tailscale ── Home Server
-                 │                                                   │
-Android Phone ───┘                                             /srv/obsidian
-```
-
-Getting there gave me hands-on practice with Linux services, file paths, permissions, device identities, synchronization, TUN device passthrough, private overlay networking, and the difference between synchronization and backup.
+Eventually I had the same notes syncing over the local network and while away through Tailscale. More importantly, I learned to distinguish **syncing files** from **having a backup**. They solve different problems.
 
 > **Public portfolio note:** Device IDs, private/Tailscale IP addresses, credentials, tailnet information, and other environment-specific identifiers are intentionally omitted or generalized.
 
