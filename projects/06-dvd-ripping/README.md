@@ -5,14 +5,13 @@
 > **Focus:** Proxmox/LXC, optical-device passthrough, Linux device access, DVD-Video structure, FFmpeg, Intel VA-API, HEVC, stream selection, automation, validation, and troubleshooting
 
 ## Why I Chose This Project
+Having Jellyfin running was only half of it. I still needed a sensible way to get media from my DVDs into the library.
 
-Once Jellyfin was running, I needed a repeatable way to move media from DVDs into the library without turning the Jellyfin container itself into a ripping workstation.
+I didn't want to turn the Jellyfin container into a workstation for ripping and encoding, so I set up a separate LXC for the job. At first I did everything manually. Find the disc, inspect the titles and streams, back it up, encode the right video and audio, check the result, then move it into the Jellyfin directory. It was slow, but I wanted to understand what each step was doing before automating it.
 
-I built the ripping workflow in its own Proxmox LXC. That kept media ingestion separate from media serving and gave me a place to experiment with optical-drive passthrough, GPU access, FFmpeg, DVD navigation, subtitles, encoding, recovery, and validation without changing the Jellyfin application container every time I tested something.
+And there were plenty of things to troubleshoot: optical-device access, odd DVD structures, timestamps, interlacing, GPU encoding failures, and output files that looked successful until I checked their duration.
 
-The project started as a completely manual workflow. I intentionally learned and tested each stage first: inspect the disc, create a backup, identify the correct DVD title, inspect streams, choose filters, encode, verify the result, and only then move it into Jellyfin.
-
-After the manual process had been tested across multiple DVDs, I turned the proven workflow into an interactive `ripdvd` script. The automation still pauses for human decisions where guessing could be dangerous, but it now handles most of the repetitive work and includes several failure-safe recovery paths.
+Once I had a workflow I could trust on multiple discs, I started building the interactive `ripdvd` script. The point wasn't just to make ripping faster. I wanted it to catch bad results, protect existing files, and make recovery less painful. The rough edges and failed tests matter here as much as the working automation.
 
 > **Public portfolio note:** This documentation focuses on infrastructure, automation, and troubleshooting. It does not publish disc contents, credentials, private addresses, device-specific secrets, or other sensitive/environment-specific identifiers. DVD examples are intentionally described generically rather than by title.
 
