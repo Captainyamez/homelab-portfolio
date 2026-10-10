@@ -6,11 +6,11 @@
 
 ## Why I Chose This Project
 
-After getting Jellyfin and the DVD-ripping workflow working, I wanted to understand how the surrounding media-management applications fit together instead of managing every file manually.
+Jellyfin was running, and my DVD workflow was working too. Next I wanted to figure out how the media-management tools fit together instead of handling everything manually.
 
-The goal was not simply to install several Docker containers. I wanted to understand the data flow between request management, indexers, download clients, library managers, subtitle automation, storage paths, Jellyfin, VPN isolation, and remote administration.
+Knowing the names—Prowlarr, Radarr, Sonarr, qBittorrent, Bazarr, Seerr—was one thing. Making them communicate was another. I built a separate media-stack LXC and connected the applications piece by piece.
 
-The finished stack runs inside its own Debian LXC on Proxmox and shares the same bulk-storage drive used by Jellyfin.
+The networking and file paths took real attention. I wanted qBittorrent isolated behind Proton VPN through Gluetun while the other apps remained reachable normally. Then there were shared directories, import paths, subtitles, and remote access to test. When a request finally made it all the way through to a playable Jellyfin item, it made sense as a system instead of a bunch of containers. The stack is intended for media I'm authorized to use.
 
 > **Public portfolio note:** This project documents the infrastructure and automation design. Credentials, VPN keys/configuration, private hostnames, API keys, private addresses, and any environment-specific secrets are not published. The workflow is intended for media I am authorized to obtain and manage.
 
