@@ -5,12 +5,11 @@
 > **Focus:** Self-hosting, Tailscale, HTTPS, browser permissions, privacy
 
 ## Why I Chose This Project
+I wanted to host something beyond a basic network utility. War Room was a web application I already had a reason to use, so it became the next experiment: could I run a third-party app myself and still get to it when I wasn't home?
 
-For this project, I wanted to go beyond installing a network utility and host a real web application that I could actually use.
+To be clear, **I didn't write War Room**. My work here was deploying it, keeping its data persistent, arranging remote access, and working through the security questions that came up.
 
-The application was **War Room**, a third-party project related to one of my hobbies. I did **not** develop War Room itself. My part of the project was deploying it on my homelab, making it reachable remotely, improving how I accessed it, and thinking through the security and privacy implications before using it.
-
-This was still early in my homelab journey, so I was learning as I went—especially around HTTP vs HTTPS, reverse proxying, private remote access, and browser site permissions.
+The first page I opened worked, but the browser's connection warning bothered me. Then there were questions about where login information was stored and why the browser wanted location access. I could have clicked through everything and called the deployment finished. Instead I spent time understanding the difference between local HTTP, private Tailscale connectivity, HTTPS through Tailscale Serve, and browser permissions. That was really the heart of this project.
 
 > **Public portfolio note:** Private hostnames, Tailscale domains, credentials, tokens, public IP addresses, and other sensitive identifiers are omitted or generalized.
 
