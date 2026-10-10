@@ -6,14 +6,11 @@
 
 ## Why I Chose This Project
 
-As the homelab grew, I ended up with more web interfaces to remember: Proxmox, Pi-hole, Jellyfin, Syncthing, Bitwarden, War Room, and the media-automation applications.
+At some point I realized I had built enough services that remembering where to manage everything was becoming a task of its own.
 
-I wanted a single place that answered two questions quickly:
+Proxmox, Pi-hole, Jellyfin, Syncthing, Bitwarden, War Room, the media apps—they all had their own interfaces. I wanted one place to check the lab's health and jump to the right tool without replacing any of those interfaces.
 
-1. Is the lab healthy?
-2. Where do I click to manage a service?
-
-Instead of replacing the native administration interfaces, Glance acts as the **front door** to them.
+Glance became that starting page. I set it up inside its own LXC with Docker, connected status widgets and launcher links, and used Tailscale Serve for private remote access. It took some troubleshooting, especially after YAML edits from a mobile device broke the layout. I also had to learn to distinguish a bad dashboard check from a service that was actually down. The goal wasn't a flashy page. It was a practical way to manage the growing lab.
 
 > **Public portfolio note:** The examples in this repository use sanitized addresses and hostnames. Real LAN addresses, Tailscale IPs, private tailnet names, credentials, and tokens are intentionally omitted.
 
