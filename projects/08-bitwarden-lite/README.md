@@ -6,11 +6,11 @@
 
 ## Why I Chose This Project
 
-After building several self-hosted services, I wanted to try a service where security, availability, and recovery mattered more than convenience alone.
+Self-hosting a password manager felt different from the other services I'd been building. If a media server stops working, it's frustrating. If a password vault disappears, the stakes are much higher.
 
-A password manager is very different from a media server or dashboard. If a media service is unavailable, it is inconvenient. If a password manager is unavailable or its data is lost, it can affect access to many other services and accounts.
+I wanted to see if I could host Bitwarden Lite responsibly, not just get a login screen running. I used Docker, SQLite, and private access through Tailscale, then spent time on device synchronization, account hardening, and backups.
 
-I chose **Bitwarden Lite** because it provides the official Bitwarden server in a lightweight single-container deployment suitable for a small homelab. I paired it with SQLite to keep the database layer simple and used Tailscale for private remote access rather than exposing the service directly to the public Internet.
+The part that really mattered was testing a restore. It's easy to say something is backed up. I wanted to know whether I could actually recover it. This write-up includes that process, and deliberately leaves out private account and authentication details.
 
 > **Public portfolio note:** This documentation is intentionally sanitized. It does not publish real passwords, vault contents, installation credentials, recovery codes, authentication seeds, private IP addresses, private Tailscale hostnames/domains, account email addresses, device identifiers, or the specific authenticator application used for two-factor authentication.
 
