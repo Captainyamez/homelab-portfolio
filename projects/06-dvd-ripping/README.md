@@ -716,3 +716,11 @@ This project evolved from a manual media-processing lab into a small fault-aware
 - Consider a separate TV-series workflow rather than forcing episode-based discs through the movie-oriented script.
 - For TV DVDs, investigate automatic episode discovery, per-episode naming, episode-order verification, and safe multi-file output.
 - Keep movie and TV automation separate if that produces clearer and safer behavior.
+
+---
+
+## October 2026 storage location update
+
+The DVD-ripper LXC retains its internal paths `/work` and `/media`, but the host bind mounts now point to the dedicated 8 TB WD Red: `/mnt/homelab-media/ripping` and `/mnt/homelab-media/jellyfin`. CT 104 remains a manually started container. Earlier 4 TB storage references describe the original configuration.
+
+See **[Project #12 — Media Storage Migration](../12-media-storage-migration/README.md)**.

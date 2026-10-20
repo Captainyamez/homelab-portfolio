@@ -296,3 +296,13 @@ The project also gave me practical experience separating traffic by security/pri
 - Document controlled update procedures
 - Add storage-capacity alerts
 - Continue refining quality profiles and library organization
+
+---
+
+## October 2026 — Media disk migration and reboot recovery
+
+The shared media storage moved from the original 4 TB disk to a dedicated **8 TB WD Red**, with CT 106 now mounting `/mnt/homelab-media` at `/data`. This preserved the application's internal library paths. The configuration backup remains on the separate 4 TB Toshiba (the host-side backup path is not part of CT 106's new `/data` mount). Any old example that assumes `/data/backups` still refers to the old layout and **must not be executed unchanged**; the backup job's new target still needs its own verification.
+
+After migration all eight Docker containers restarted, Radarr and Sonarr recognized the existing libraries, and Jellyfin playback passed. qBittorrent's exit IP matched Gluetun. A one-time mismatch between the VPN forwarded port and qBittorrent's listening port was corrected by restarting `port-sync`; both ports then matched automatically after a complete Proxmox reboot.
+
+See **[Project #12 — Media Storage Migration](../12-media-storage-migration/README.md)** for the cutover, safeguards and test results.

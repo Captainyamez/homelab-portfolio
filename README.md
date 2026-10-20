@@ -35,7 +35,7 @@ The current goal is to keep adding useful services while gradually building stro
 | 9 | [Self-Hosted Media Automation Stack](projects/09-media-automation-stack/README.md) | ✅ Working / End-to-end tested | Docker Compose, VPN isolation, service APIs, shared storage, path mapping, remote administration |
 | 10 | [Raspberry Pi 5 Jellyfin Streaming Client](projects/10-rpi5-jellyfin-streaming-client/README.md) | ✅ Working / Travel Tested | Privacy-focused client design, LibreELEC, Kodi, Jellyfin sync, travel networking, K06 keyboard/IR remote |
 | 11 | [Centralized Homelab Dashboard with Glance](projects/11-glance-dashboard/README.md) | ✅ Running / Remotely Accessible | Glance, Docker Compose, service monitoring, custom HTML/CSS, JSON telemetry, Tailscale Serve |
-| 12 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
+| 12 | [Dedicated 8 TB Media Storage Migration](projects/12-media-storage-migration/README.md) | ✅ Completed / Reboot Verified | SMART, GPT/ext4, rsync, LXC bind mounts, VPN port-sync, recovery testing |\n| 13 | Immich / photo backup | 🔜 Planned | Self-hosted photo storage, backups, data protection |
 
 ---
 
@@ -49,7 +49,7 @@ The current goal is to keep adding useful services while gradually building stro
 | CPU | Intel Core i5-8500 |
 | Memory | 32 GB RAM |
 | Primary storage | 1 TB NVMe SSD |
-| Bulk storage | 4 TB SATA HDD |
+| Media storage | 8 TB WD Red SATA HDD |\n| Personal / backup storage | 4 TB Toshiba SATA HDD |
 | Hypervisor | Proxmox VE |
 
 ### Other devices I use while learning
@@ -78,7 +78,7 @@ The current goal is to keep adding useful services while gradually building stro
           LibreELEC/Kodi                   │
           Jellyfin client      ┌───────────┼───────────────────────────────┐
                                │           │                               │
-                            Pi-hole     Application LXCs                4 TB HDD
+                            Pi-hole     Application LXCs             SATA storage
                                        ├── War Room                    ├── Jellyfin
                                        ├── Syncthing                   ├── Backups
                                        ├── Jellyfin                    ├── Ripping
@@ -179,7 +179,7 @@ This project pulled several parts of the homelab together. I had to work through
 
 After Jellyfin was working, I wanted a separate ingestion workflow for moving media from personally owned DVDs into the library without turning the Jellyfin container into a ripping workstation.
 
-I built another Debian LXC, passed the physical optical drive and Intel render device into it, bind-mounted working and media directories from the 4 TB HDD, and tested a manual workflow based around `dvdbackup`, FFmpeg's `dvdvideo` demuxer, `ffprobe`, Intel VA-API HEVC encoding, and software fallback when a disc did not behave cleanly.
+I built another Debian LXC, passed the physical optical drive and Intel render device into it, initially bind-mounted working and media directories from the 4 TB HDD, and tested a manual workflow based around `dvdbackup`, FFmpeg's `dvdvideo` demuxer, `ffprobe`, Intel VA-API HEVC encoding, and software fallback when a disc did not behave cleanly.
 
 This became one of the more troubleshooting-heavy projects in the lab. Different discs exposed differences in DVD navigation, aspect ratio, audio/subtitle layouts, progressive versus interlaced material, timestamp behavior, and even a mid-stream video-parameter change that required splitting an encode into sections and joining the verified results afterward.
 
@@ -269,6 +269,16 @@ The project also gave me a useful troubleshooting exercise when a malformed YAML
 
 ---
 
+## Project #12: Dedicated 8 TB Media Storage Migration
+
+I added a dedicated WD Red media drive and migrated approximately 450 GB from the existing Toshiba disk without rebuilding the media applications. I validated SMART health, GPT/ext4 formatting, UUID mounting, preserved LXC bind paths, Linux ownership/ACLs, Docker/VPN functionality, and Jellyfin playback after a full Proxmox reboot.
+
+**Things I touched:** `SMART` · `GPT` · `ext4` · `rsync` · `tmux` · `LXC` · `systemd` · `Docker` · `Tailscale SSH` · `Rollback planning`
+
+➡️ **[Read Project #12](projects/12-media-storage-migration/README.md)**
+
+---
+
 ## 🧠 What I Am Trying to Get Better At
 
 A big reason I started documenting this is so I can look back and see the difference between what I understood at the beginning and what I understand later.
@@ -290,7 +300,7 @@ Right now I am deliberately working on:
 
 The lab is still young, so there is a lot left to build.
 
-The 4 TB bulk-storage integration is complete at the host level and is now actively used by multiple services. The ripping process is working as a manual, verified workflow. The physical monitoring dashboard is working as a standalone device, the password-manager project has automated local backups plus a verified restore procedure, the media automation stack is working end-to-end, the Raspberry Pi 5 now serves as a dedicated LibreELEC/Kodi Jellyfin client, and Glance provides a centralized web dashboard for host health, service monitoring, and LAN/Tailscale launch links.
+The homelab now has separate 8 TB media storage and 4 TB personal/backup storage, with a tested migration and successful reboot recovery. The ripping process is working as a manual, verified workflow. The physical monitoring dashboard is working as a standalone device, the password-manager project has automated local backups plus a verified restore procedure, the media automation stack is working end-to-end, the Raspberry Pi 5 now serves as a dedicated LibreELEC/Kodi Jellyfin client, and Glance provides a centralized web dashboard for host health, service monitoring, and LAN/Tailscale launch links.
 
 Planned or developing projects include:
 

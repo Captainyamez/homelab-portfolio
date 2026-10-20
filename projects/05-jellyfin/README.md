@@ -384,3 +384,11 @@ The separate DVD-ripping/media-ingestion workflow is being documented as its own
 - Improve media naming and organization standards as the library grows
 - Revisit permissions if Jellyfin later needs controlled write access to media directories
 - Evaluate network segmentation and access controls as the homelab becomes more complex
+
+---
+
+## October 2026 storage migration update
+
+Jellyfin now reads media from the dedicated **8 TB WD Red** mounted on the Proxmox host at `/mnt/homelab-media`. Its existing LXC path `/media` was preserved while the bind mount changed to `/mnt/homelab-media/jellyfin`. Playback was verified before and after a full host reboot; no library rebuild was required. Earlier sections describe the original 4 TB deployment as historical configuration.
+
+Details: **[Project #12 — Media Storage Migration](../12-media-storage-migration/README.md)**.
