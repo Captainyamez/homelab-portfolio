@@ -204,26 +204,40 @@ This gives me remote access to management interfaces while keeping normal servic
 
 ## Backup Strategy
 
-The live Docker Compose deployment is stored under:
+The live Docker Compose deployment lives at `/opt/media-stack/` inside CT 106. After migrating media to the dedicated 8 TB disk, I mounted the Toshiba's existing backup directory separately:
 
 ```text
-/opt/media-stack/
+CT 106
+/data               ← 8 TB media disk
+/mnt/media-backups  ← 4 TB Toshiba /backups
+/opt/media-stack    ← live Compose configuration and app data
 ```
 
-A copy is maintained on the bulk-storage backup path.
+The host bind mount is:
 
-The refresh command I use is:
+```text
+mp1: /mnt/homelab-storage/backups,mp=/mnt/media-backups
+```
+
+I verified that CT 106 could create and remove a test file in `/mnt/media-backups/media-stack/`. To avoid copying active SQLite databases while applications were writing, I stopped the stack cleanly and refreshed the backup **from within CT 106**:
 
 ```bash
-rsync -rlD --delete /opt/media-stack/ /data/backups/media-stack/
+cd /opt/media-stack
+docker compose down
+rsync -rltD --omit-dir-times --delete \
+  /opt/media-stack/ \
+  /mnt/media-backups/media-stack/
+echo $?  # 0 in the successful test
+docker compose up -d
 ```
 
-The `--delete` option makes the destination a mirror of the source, so files removed from the live configuration are also removed from the backup mirror.
+The original `rsync -rltD` attempt reported exit code 23 because the unprivileged container could not set the **destination directory timestamp**. Adding `--omit-dir-times` resolved that specific issue; the subsequent run returned **0**.
 
-The backup includes deployment configuration such as the Compose files and environment file. Because that environment file can contain sensitive values, its real contents are **not** published in this repository.
+Afterward, all eight containers were running and Gluetun reported healthy. Bazarr was still in its startup health-check period at the time of the status output. `cmp` confirmed that the backup `compose.yaml` and `.env` matched the live originals; a full application-data restore test has **not** been completed for this refreshed backup.
 
-This is a configuration backup, not a substitute for backing up irreplaceable media or other critical data.
+**Warning:** `--delete` removes destination files absent from the source. Always verify both mount paths first, and do not use the former `/data/backups/media-stack/` destination after the storage cutover.
 
+The backup includes sensitive configuration such as `.env`, which is deliberately excluded from this public repository. The Toshiba copy is on a separate physical disk but still in the same host; it is not an off-site disaster-recovery backup.
 ---
 
 ## Verification
@@ -301,7 +315,7 @@ The project also gave me practical experience separating traffic by security/pri
 
 ## October 2026 — Media disk migration and reboot recovery
 
-The shared media storage moved from the original 4 TB disk to a dedicated **8 TB WD Red**, with CT 106 now mounting `/mnt/homelab-media` at `/data`. This preserved the application's internal library paths. The configuration backup remains on the separate 4 TB Toshiba (the host-side backup path is not part of CT 106's new `/data` mount). Any old example that assumes `/data/backups` still refers to the old layout and **must not be executed unchanged**; the backup job's new target still needs its own verification.
+The shared media storage moved from the original 4 TB disk to a dedicated **8 TB WD Red**, with CT 106 mounting `/mnt/homelab-media` at `/data`. A separate `mp1` bind mount now exposes the Toshiba backup directory as `/mnt/media-backups`. I verified write access, refreshed the backup with `rsync --omit-dir-times` after stopping Docker services, confirmed exit code 0 and matching main deployment files, then restarted all eight containers. The former `/data/backups` destination is obsolete.
 
 After migration all eight Docker containers restarted, Radarr and Sonarr recognized the existing libraries, and Jellyfin playback passed. qBittorrent's exit IP matched Gluetun. A one-time mismatch between the VPN forwarded port and qBittorrent's listening port was corrected by restarting `port-sync`; both ports then matched automatically after a complete Proxmox reboot.
 
