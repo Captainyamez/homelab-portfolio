@@ -205,3 +205,11 @@ The next milestones built on this host include:
 - Monitoring
 - VLANs and network segmentation
 - CCNA-focused networking labs
+
+---
+
+## October 2026 — Dedicated media disk expansion
+
+The host was expanded from one 4 TB bulk HDD to **separate 8 TB media and 4 TB personal-data drives**, alongside the 1 TB NVMe system disk. I SMART-tested the new WD Red, created GPT/ext4 storage, mounted it persistently by UUID, migrated approximately 450 GB of media, and verified container recovery after a full Proxmox reboot. The 4 TB Toshiba is being repurposed for personal data and backups; its previous media copies are retained temporarily for rollback.
+
+See **[Project #12 — Dedicated 8 TB Media Storage Migration](../12-media-storage-migration/README.md)** for the full procedure, validation and limitations.
