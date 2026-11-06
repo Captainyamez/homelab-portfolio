@@ -131,11 +131,39 @@ A post-migration check found qBittorrent's listening port did not match Gluetun'
 
 A reboot also verified that both drives mounted, CT 103 and CT 106 started, and CT 104 remained stopped by design. This confirms the successful **normal-boot case**; I have not simulated a missing-drive failure remotely.
 
+## 6. Post-migration observation and Toshiba cleanup — November 2026
+
+After more than two weeks of normal operation, Jellyfin continued to play media successfully, new DVD rips worked, and additional media was imported through the automation workflow. I then retired the old media directories on the 4 TB Toshiba.
+
+Before deleting anything I verified:
+
+- Both drives were mounted as ext4 with the expected device sources.
+- LXC 103 (Jellyfin), 104 (DVD Ripper) and 106 (Media Stack) referenced the **8 TB media drive**; the 4 TB Toshiba remained referenced for Bitwarden and media-stack backup mounts.
+- `rsync -rni --size-only` comparisons exposed an obsolete older movie rip and historical download files. I checked these discrepancies rather than treating the comparison as clean. The old movie rip had already been replaced by a better version.
+- The old ripping tree matched its new counterpart in the size-based dry-run, and the old optical-disc recovery/temporary processing files were no longer needed.
+- `findmnt -R` showed no nested mounts under the old Toshiba media directories. `fuser -vm` reported no userspace processes accessing them in that check.
+- Docker inspection confirmed qBittorrent's `/downloads` maps to `/data/downloads` in CT 106, which is on the 8 TB disk. An inactive item was reviewed and removed from the client before cleanup.
+
+I deleted only the old Toshiba `jellyfin/`, `ripping/`, and finally `downloads/` directories, after confirming the files not present at identical paths were obsolete or otherwise no longer needed. The 8 TB live-media files were not targeted.
+
+### Measured results
+
+| Check | Before cleanup | After cleanup |
+|---|---:|---:|
+| Toshiba used (`df -hT`) | 450G | 541M |
+| Toshiba capacity | 3.6T | 3.6T |
+| WD Red used | 524G | 524G |
+| WD Red available | 6.8T | 6.8T |
+
+The Toshiba retained `backups/` (about 544 MB measured during inspection), `documents/`, `immich/`, `notes/`, `personal/`, `photos/`, `shared/`, and `lost+found/`. Its old media and download trees no longer appear in the final directory listing. Values are reported as printed by `df`/`du`, which apply rounded human-readable units.
+
+**Limitations:** The comparisons were based on filenames and file sizes, not a completed end-to-end checksum audit of every media file. This cleanup permanently retired the initial rollback copies; ongoing backups are selective rather than a full replica of the media disk.
+
 ## Backup strategy and follow-ups
 
 The 8 TB disk is dedicated primarily to Jellyfin and is **not fully mirrored**. My plan is to back up important or difficult-to-replace rips selectively when I build a separate backup node with a planned 12 TB HDD. Personal photographs, documents, notes and sensitive service data deserve a higher backup priority.
 
-The previous media directories remain on the Toshiba temporarily as a rollback copy. Their eventual removal is a separate cleanup step and is **not documented as completed**.
+The previous media directories were retained on the Toshiba as a temporary rollback copy during the initial cutover. **On November 5, 2026, after over two weeks of successful operation, I completed the cleanup** as documented below.
 
 Additional future checks: monitor disk health and mount availability, verify selective backups by restoring them, and avoid treating a second disk in the same building as an off-site backup.
 
